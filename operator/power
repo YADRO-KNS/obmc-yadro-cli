@@ -1,0 +1,57 @@
+#!/bin/bash -eu
+
+#
+# Host power control - wrapper around obmcutil.
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+# parse command line options
+ACTION=
+FORCE=
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h | --help )
+      echo "Host power control."
+      echo "Use: ${0##*/} [OPTION...] ACTION"
+      echo "Actions:"
+      echo "  on            Power on host"
+      echo "  off           Shutdown host"
+      echo "  status        Print current status [default]"
+      echo "Options:"
+      echo "  -f, --force   Force shutdown host (chassis power off)"
+      echo "  -h, --help    Print this help and exit"
+      exit 0;;
+    -f | --force )
+      FORCE="$1";;
+    on | off | status )
+      if [[ -z "${ACTION}" ]]; then
+        ACTION="$1"
+      else
+        echo "Invalid argument, action already defined" >&2
+        exit 1
+      fi;;
+    * )
+      echo "Invalid argument: $1" >&2
+      exit 1;;
+  esac
+  shift
+done
+
+# elevate self privileges
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${FORCE} ${ACTION}
+
+# execute command
+case "${ACTION}" in
+  on )
+    obmcutil poweron;;
+  off )
+    if [[ -n "${FORCE}" ]]; then
+      obmcutil chassisoff
+    else
+      obmcutil poweroff
+    fi;;
+  * )
+    obmcutil status | sed 's/xyz.*\.//';;
+esac

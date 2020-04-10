@@ -1,0 +1,32 @@
+#!/bin/bash -eu
+
+#
+# Show sensors state.
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+# parse command line options
+TYPE=
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h | --help )
+      echo "Show sensors state."
+      echo "Use: ${0##*/} [OPTION...] [TYPE]"
+      echo "  -h, --help    Print this help and exit"
+      exit 0;;
+    * )
+      if [[ -n "${TYPE}" ]]; then
+        echo "Invalid argument, type filter already defined" >&2
+        exit 1
+      fi
+      TYPE="$1";;
+  esac
+  shift
+done
+
+# elevate self privileges
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) "${TYPE}"
+
+exec lssensors "${TYPE}"

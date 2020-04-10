@@ -1,0 +1,43 @@
+#!/bin/bash -eu
+
+#
+# Update firmware.
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+# parse command line options
+FILE=
+RESET=
+YES=
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h | --help )
+      echo "Update BIOS/BMC firmware."
+      echo "Use: ${0##*/} [OPTION...] FILE"
+      echo "  -r, --reset   Reset all settings to manufacturing default"
+      echo "  -y, --yes     Do not ask for confirmation"
+      echo "  -h, --help    Print this help and exit"
+      exit 0;;
+    -y | --yes )
+      YES="$1";;
+    -r | --reset )
+      RESET="$1";;
+    * )
+      if [[ -n "${FILE}" ]]; then
+        echo "Invalid argument, file already specified" >&2
+        exit 1
+      fi
+      FILE="$1";;
+  esac
+  shift
+done
+
+# elevate self privileges
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${YES} ${RESET} "${FILE}"
+
+CMD="fwupdate"
+[[ -z "${YES}" ]] || CMD+=" --yes"
+[[ -z "${RESET}" ]] || CMD+=" --reset"
+exec ${CMD} "${FILE}"

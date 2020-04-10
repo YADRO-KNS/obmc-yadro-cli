@@ -1,0 +1,30 @@
+#!/bin/bash -eu
+
+#
+# Host console - wrapper around obmc-console-client.
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h | --help )
+      echo "Host console access."
+      echo "Use: ${0##*/} [OPTION...]"
+      echo "  -h, --help    Print this help and exit"
+      exit 0;;
+    * )
+      echo "Invalid argument: $1" >&2
+      exit 1;;
+  esac
+  shift
+done
+
+cat << EOF
+Starting a Host console connection.
+Send <CR>~. to terminate it.
+If connected via SSH, add extra ~ characters, one per SSH connection.
+EOF
+
+exec obmc-console-client

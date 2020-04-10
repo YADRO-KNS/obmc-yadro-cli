@@ -1,0 +1,13 @@
+# Default profile
+
+# replace built-in help command
+alias help="/usr/bin/help"
+
+# add sbin to path
+PATH="${PATH}:/sbin:/usr/sbin"
+
+# greeting
+cat << EOF
+Welcome to BMC for $(sed -n 's/OPENBMC_TARGET_MACHINE="\(.*\)"/\1/p' /etc/os-release) server!
+Type 'help' to print the list of useful commands.
+EOF

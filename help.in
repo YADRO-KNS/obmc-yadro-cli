@@ -1,0 +1,25 @@
+#!/bin/bash -u
+
+GROUP="$(id -gn)"
+
+ADMIN="false"
+OPERATOR="false"
+if [[ ${GROUP} == %GROUP_ADMIN% ]]; then
+  ADMIN="true"
+  OPERATOR="true"
+elif [[ ${GROUP} == %GROUP_OPERATOR% ]]; then
+  OPERATOR="true"
+fi
+
+${OPERATOR} && echo -e "power       Host power control"
+${ADMIN}    && echo -e "led         Chassis LED identify control"
+               echo -e "console     Open host console"
+               echo -e "sensors     Print sensors state"
+${ADMIN}    && [[ -e /usr/bin/nmi ]] && echo -e "nmi         Initiate kdump on the host system"
+${ADMIN}    && echo -e "logs        Print or export BMC system logs"
+${ADMIN}    && echo -e "esel        Decode eSEL"
+${ADMIN}    && echo -e "user        User managment"
+${ADMIN}    && echo -e "update      Update BIOS/BMC firmware"
+${ADMIN}    && echo -e "config      Save/restore BMC configuration"
+               echo -e "version     Print BIOS/BMC firmware version"
+               echo -e "help        Print this help"

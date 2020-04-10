@@ -1,0 +1,39 @@
+#!/bin/bash -eu
+
+#
+# Operations with BMC system logs.
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+# parse command line options
+EXPORT=
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h | --help )
+      echo "View BMC system logs."
+      echo "Use: ${0##*/} [OPTION...]"
+      echo "  -e, --export  Export system state report"
+      echo "  -h, --help    Print this help and exit"
+      exit 0;;
+    -e | --export )
+      EXPORT="$1";;
+    * )
+      echo "Invalid argument: $1" >&2
+      exit 1;;
+  esac
+  shift
+done
+
+# elevate self privileges
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${EXPORT}
+
+# execute command
+if [[ -n "${EXPORT}" ]]; then
+  dreport
+  echo
+  echo "Report created: /tmp/obmcdump_NNNNNNNN_NNNNNNNNNN.tar.xz"
+else
+  journalctl --no-hostname --no-pager
+fi

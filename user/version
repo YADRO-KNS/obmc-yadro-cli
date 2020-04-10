@@ -1,0 +1,28 @@
+#!/bin/bash -eu
+
+#
+# Show firmware versions.
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+# parse command line options
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h | --help )
+      echo "Show firmware version."
+      echo "Use: ${0##*/} [OPTION...]"
+      echo "  -h, --help    Print this help and exit"
+      exit 0;;
+    * )
+      echo "Invalid argument: $1" >&2
+      exit 1;;
+  esac
+  shift
+done
+
+# elevate self privileges
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]})
+
+exec fwupdate --version

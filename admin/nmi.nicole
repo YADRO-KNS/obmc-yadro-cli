@@ -1,0 +1,53 @@
+#!/bin/bash -eu
+
+#
+# Initiate kernel memory dump (kdump) on the host system via NMI.
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+# parse command line options
+YES=
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h | --help )
+      echo "Host dump initiator (NMI)."
+      echo "Use: ${0##*/} [OPTION...]"
+      echo "  -y, --yes     Do not ask for confirmation"
+      echo "  -h, --help    Print this help and exit"
+      exit 0;;
+    -y | --yes )
+      YES="$1";;
+    * )
+      echo "Invalid argument: $1" >&2
+      exit 1;;
+  esac
+  shift
+done
+
+# elevate self privileges
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${YES}
+
+# ask for confirmation
+if [[ -z "${YES}" ]]; then
+  echo "****** WARNING! ******"
+  echo "You are going to initiate kernel memory dump (kdump) on the host system."
+  echo "This action will inevitably REBOOT the host system!"
+  read -p "Are you sure? (Type 'yes' to continue) " YN
+  if [[ ${YN} != yes ]]; then
+    echo "Aborted by user" >&2
+    exit 1
+  fi
+fi
+
+# send SRESET via NMI
+if ! pdbg -P pib1/chiplet0/core0/thread0 stop; then
+  echo "Unable to stop thread" >&2
+  exit 1
+fi
+if ! pdbg -P pib1/chiplet0/core0/thread0 sreset; then
+  echo "Unable to send SRESET" >&2
+  exit 1
+fi
+echo "SRESET signal has been sent, expect kdump on the host."
