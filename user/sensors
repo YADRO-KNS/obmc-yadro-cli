@@ -1,0 +1,7 @@
+#!/bin/bash -eu
+
+#
+# CLI: Print sensors list
+#
+
+exec lssensors $@

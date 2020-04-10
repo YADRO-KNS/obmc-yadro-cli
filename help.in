@@ -1,0 +1,22 @@
+#!/bin/bash -eu
+
+#
+# Help for CLI
+#
+
+HELP_FILE="/usr/share/cli.help"
+USER_GROUPS="$(groups)"
+
+function print {
+  printf "%-12s %s\n" "$1" "$2"
+}
+
+while read -r GRP CMD DESC; do
+  if echo "${USER_GROUPS}" | grep -q ${GRP}; then
+    print "${CMD}" "${DESC}"
+  fi
+done < ${HELP_FILE}
+
+# static help lines
+print "helpsh" "Print shell help"
+print "help" "Print this help"

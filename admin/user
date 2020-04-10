@@ -1,0 +1,159 @@
+#!/bin/bash -eu
+
+#
+# CLI: User management
+#
+
+ROLE_ADMIN="admin"
+ROLE_OPERATOR="operator"
+ROLE_USER="user"
+
+GROUP_ADMIN="%GROUP_ADMIN%"
+GROUP_OPERATOR="%GROUP_OPERATOR%"
+GROUP_USER="%GROUP_USER%"
+GROUP_IPMI="ipmi"
+GROUP_SUDO="sudo"
+
+# Create new user account with default role "user".
+function create_user {
+  local user="$1"
+  useradd --gid ${GROUP_USER} --groups ${GROUP_USER},${GROUP_SUDO} ${user}
+  echo "User ${user} created."
+}
+
+# Delete user account.
+function delete_user {
+  local user="$1"
+  deluser --remove-home ${user}
+  echo "User ${user} removed."
+}
+
+# Set password for user account.
+function set_password {
+  local user="$1"
+  passwd ${user}
+}
+
+# Change role for user account.
+function set_role {
+  local user="$1"
+  local role="$2"
+
+  local group
+  case "${role}" in
+    ${ROLE_ADMIN}) group="${GROUP_ADMIN}";;
+    ${ROLE_OPERATOR}) group="${GROUP_OPERATOR}";;
+    ${ROLE_USER}) group="${GROUP_USER}";;
+    *)
+      echo "Invalid role name: ${role}" >&2
+      exit 1
+      ;;
+  esac
+
+  # add user to the privilege group and set it as primary
+  if ! groups ${user} | grep -q ${group}; then
+    groupmems --add ${user} --group ${group}
+    usermod --gid ${group} ${user}
+  fi
+
+  local iter
+  for iter in ${GROUP_ADMIN} ${GROUP_OPERATOR} ${GROUP_USER}; do
+    # check for membership
+    groups ${user} | grep -q ${iter} && local is_member="y" || local is_member=""
+    # if user is admin - add him to all privilege groups
+    if [[ ${role} == ${ROLE_ADMIN} ]]; then
+      [[ -n "${is_member}" ]] || groupmems --add ${user} --group ${iter}
+    else
+      # if not admin - remove user from other groups
+      if [[ -n "${is_member}" ]] && [[ ${iter} != ${group} ]]; then
+        groupmems --delete ${user} --group ${iter}
+      fi
+    fi
+  done
+
+  # add admins to ipmi group
+  groups ${user} | grep -q ${GROUP_IPMI} && local is_member="y" || local is_member=""
+  if [[ ${role} == ${ROLE_ADMIN} ]] && [[ -z "${is_member}" ]]; then
+    groupmems --add ${user} --group ${GROUP_IPMI}
+  fi
+  # revoke ipmi access for other users
+  if [[ ${role} != ${ROLE_ADMIN} ]] && [[ -n "${is_member}" ]]; then
+    groupmems --delete ${user} --group ${GROUP_IPMI}
+  fi
+}
+
+# Print user list.
+# All our users is sudoers, use it for iterate through the list.
+function print_list() {
+  local user role
+  for user in $(groupmems --list --group ${GROUP_SUDO} | sort); do
+    if groups ${user} | grep -q ${GROUP_ADMIN}; then
+      role="${ROLE_ADMIN}"
+    elif groups ${user} | grep -q ${GROUP_OPERATOR}; then
+      role="${ROLE_OPERATOR}"
+    elif groups ${user} | grep -q ${GROUP_USER}; then
+      role="${ROLE_USER}"
+    else
+      role="n/a"
+    fi
+    echo "${user}: ${role}"
+  done
+}
+
+# Check account name.
+function check_name {
+  if [[ ! $1 =~ ^[\.a-zA-Z0-9_-]+$ ]]; then
+    echo "Invalid user name" >&2
+    exit 1
+  fi
+}
+
+RESTART_SVC=""
+ACTION="help"
+[[ $# -eq 0 ]] || ACTION="$1"
+case "${ACTION}" in
+  help | -h | --help)
+    echo "User management."
+    echo "Use: $0 [OPTION...]"
+    echo "Options:"
+    echo "  create NAME        Create new user"
+    echo "  delete NAME        Delete user"
+    echo "  passwd NAME        Set user password"
+    echo "  setrole NAME ROLE  Set user role (admin, operator or user)"
+    echo "  list               Show list of users and their roles"
+    echo "  -h, --help         Print this help and exit"
+    exit 0
+    ;;
+  create)
+    [[ $# -eq 2 ]] || { echo "Invalid arguments" >&2; exit 1; }
+    check_name "$2"
+    create_user "$2"
+    RESTART_SVC="y"
+    ;;
+  delete)
+    [[ $# -eq 2 ]] || { echo "Invalid arguments" >&2; exit 1; }
+    check_name "$2"
+    delete_user "$2"
+    RESTART_SVC="y"
+    ;;
+  passwd)
+    [[ $# -eq 2 ]] || { echo "Invalid arguments" >&2; exit 1; }
+    check_name "$2"
+    set_password "$2"
+    ;;
+  setrole)
+    [[ $# -eq 3 ]] || { echo "Invalid arguments" >&2; exit 1; }
+    check_name "$2"
+    set_role "$2" "$3"
+    RESTART_SVC="y"
+    ;;
+  list)
+    print_list
+    ;;
+  *)
+    echo "Invalid argument: ${ACTION}" >&2
+    exit 1
+    ;;
+esac
+
+[[ -z "${RESTART_SVC}" ]] || systemctl restart xyz.openbmc_project.User.Manager.service

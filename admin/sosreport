@@ -1,0 +1,72 @@
+#!/bin/bash -eu
+
+#
+# CLI: Create system state report
+#
+
+# parse command line options
+if [[ $# -eq 1 ]]; then
+  case "$1" in
+    -h | --help)
+      echo "Create system state report."
+      echo "Use: $0 [OPTION...]"
+      echo "  -h, --help    Print this help and exit"
+      exit 0
+      ;;
+    *)
+      echo "Invalid argument: $1" >&2
+      exit 1
+      ;;
+  esac
+  shift
+elif [[ $# -gt 1 ]]; then
+  echo "Invalid arguments" >&2
+  exit 1
+fi
+
+# Create report over D-Bus call.
+function report_dbus {
+  local mgr_iface="xyz.openbmc_project.Dump.Manager"
+  local mgr_obj="/xyz/openbmc_project/dump"
+  local dump_dir="/var/lib/phosphor-debug-collector/dump"
+
+  echo "Creating SOS report..."
+
+  # remove previous reports
+  busctl call ${mgr_iface} ${mgr_obj} xyz.openbmc_project.Collection.DeleteAll DeleteAll
+  # create new report
+  local entry="$(busctl --list call ${mgr_iface} ${mgr_obj} xyz.openbmc_project.Dump.Create CreateDump)"
+  if [[ -z "${entry}" ]]; then
+    return 1
+  fi
+  # 'u 4' -> '4'
+  entry="${entry##* }"
+  # wait for report complete
+  mapper wait ${mgr_obj}/entry/${entry}
+  # get timestamp to construct file name
+  local elapsed="$(busctl --list get-property ${mgr_iface} \
+                          ${mgr_obj}/entry/${entry} \
+                          xyz.openbmc_project.Time.EpochTime Elapsed)"
+  if [[ -z "${elapsed}" ]]; then
+    return 1
+  fi
+  # 't 1568116858' -> '1568116858'
+  elapsed="${elapsed##* }"
+
+  local filename="/var/lib/phosphor-debug-collector/dumps/obmcdump_${entry}_${elapsed}.tar.xz"
+  if [[ -f ${filename} ]]; then
+    echo "Report created: ${filename}"
+  else
+    return 1
+  fi
+}
+
+# Create report directly with dreport.
+function report_direct {
+  dreport -v
+  echo
+  echo "Report created: /tmp/obmcdump_NNNNNNNN_NNNNNNNNNN.tar.xz"
+}
+
+# try to gather report over D-Bus, if it fails - call dreport directly
+report_dbus || report_direct
