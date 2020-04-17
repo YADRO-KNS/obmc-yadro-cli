@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 #
-# View BMC system logs.
+# System state report.
 #
 
 # prevent modification of executable path
@@ -12,7 +12,7 @@ EXPORT=
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h | --help )
-      echo "View BMC system logs."
+      echo "Create system state report."
       echo "Use: ${0##*/} [OPTION...]"
       echo "  -h, --help    Print this help and exit"
       exit 0;;
@@ -26,4 +26,6 @@ done
 # elevate self privileges
 [[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]})
 
-exec journalctl --no-hostname --no-pager
+dreport
+echo
+echo "Report created: /tmp/obmcdump_NNNNNNNN_NNNNNNNNNN.tar.xz"
