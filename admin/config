@@ -11,7 +11,7 @@ PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 [[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) $@
 
 # list of files to save/restore
-WHITELIST="/var/run/initramfs/whitelist"
+WHITELIST="/run/initramfs/whitelist"
 
 # parse command line options
 if [[ $# -eq 0 ]]; then
