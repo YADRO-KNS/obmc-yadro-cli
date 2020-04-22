@@ -2,6 +2,7 @@
 
 # replace built-in help command
 alias help="/usr/bin/help"
+alias helpsh="builtin help"
 
 # add sbin to path
 PATH="${PATH}:/sbin:/usr/sbin"

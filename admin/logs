@@ -8,22 +8,38 @@
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
 # parse command line options
-EXPORT=
+VERBOSE=
+CLEAR=
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -h | --help )
+    -h | --help)
       echo "View BMC system logs."
       echo "Use: ${0##*/} [OPTION...]"
-      echo "  -h, --help    Print this help and exit"
-      exit 0;;
+      echo "  -c, --clear    Clear all logs"
+      echo "  -v, --verbose  Verbose output"
+      echo "  -h, --help     Print this help and exit"
+      exit 0
+      ;;
+    -c | --clear) CLEAR="$1";;
+    -v | --verbose) VERBOSE="$1";;
     * )
       echo "Invalid argument: $1" >&2
-      exit 1;;
+      exit 1
+      ;;
   esac
   shift
 done
 
 # elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]})
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${VERBOSE} ${CLEAR}
 
-exec journalctl --no-hostname --no-pager
+CMD="journalctl"
+if [[ -n "${CLEAR}" ]]; then
+  CMD+=" --vacuum-time=1s"
+else
+  CMD+=" --no-hostname --no-pager"
+  if [[ -n "${VERBOSE}" ]]; then
+    CMD+=" --output verbose"
+  fi
+fi
+exec ${CMD}

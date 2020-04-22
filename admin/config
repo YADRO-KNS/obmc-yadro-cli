@@ -14,10 +14,13 @@ PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 WHITELIST="/var/run/initramfs/whitelist"
 
 # parse command line options
-ACTION="help"
-[[ $# -eq 0 ]] || ACTION="$1"
+if [[ $# -eq 0 ]]; then
+  ACTION="help"
+else
+  ACTION="$1"
+fi
 case "${ACTION}" in
-  help | -h | --help )
+  help | -h | --help)
     echo "Backup or restore OpenBMC configuration."
     echo "Use: ${0##*/} [OPTION...]"
     echo "  backup FILE   Save configuration to file"
@@ -26,21 +29,31 @@ case "${ACTION}" in
     echo "  -h, --help    Print this help and exit"
     ;;
 
-  backup )
-    [[ $# -eq 2 ]] || { echo "Invalid arguments" >&2; exit 1; }
-    tar czf "$2" -T ${WHITELIST} &>/dev/null || /bin/true
-    if [[ -f $2 ]]; then
-      echo "Backup created: $2"
+  backup)
+    if [[ $# -ne 2 ]]; then
+      echo "File name is not specified" >&2
+      exit 1
+    fi
+    shift
+    BACKUP_FILE="$1"
+    tar czf "${BACKUP_FILE}" -T ${WHITELIST} &>/dev/null || /bin/true
+    if [[ -f ${BACKUP_FILE} ]]; then
+      echo "Backup created: ${BACKUP_FILE}"
     else
-      echo "Error creating backup: $2" >&2
+      echo "Error creating backup: ${BACKUP_FILE}" >&2
       exit 1;
     fi
     ;;
 
-  restore )
-    [[ $# -eq 2 ]] || { echo "Invalid arguments" >&2; exit 1; }
+  restore)
+    if [[ $# -ne 2 ]]; then
+      echo "File name is not specified" >&2
+      exit 1
+    fi
+    shift
+    BACKUP_FILE="$1"
     TMP_DIR="$(mktemp -d)"
-    tar xf "$2" -C ${TMP_DIR}
+    tar xf "${BACKUP_FILE}" -C ${TMP_DIR}
     for FILE in $(cat ${WHITELIST}); do
       [[ -e ${TMP_DIR}${FILE} ]] || continue
       rm -rf ${FILE} &>/dev/null || true
@@ -52,11 +65,12 @@ case "${ACTION}" in
     echo "Please, reboot the BMC."
     ;;
 
-  reset )
+  reset)
     fwupdate --reset
     ;;
 
   * )
     echo "Invalid argument: $1" >&2
-    exit 1;;
+    exit 1
+    ;;
 esac

@@ -8,18 +8,7 @@
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
 # elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${FORCE}
-
-# Color output support
-if [[ -t 1 ]]; then
-  readonly CLR_OK="\e[32m"
-  readonly CLR_ERR="\e[31m"
-  readonly CLR_RST="\e[0m"
-else
-  readonly CLR_OK=
-  readonly CLR_ERR=
-  readonly CLR_RST=
-fi
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]})
 
 # Execute command.
 # Param 1: command description (message text)
@@ -31,9 +20,9 @@ function exec_cmd {
   echo -n "${msg}..."
   local out
   if out="$(eval "{ ${cmd}; exit \${PIPESTATUS[0]}; } 2>&1")"; then
-    printf "\r%-24s [ ${CLR_OK}OK${CLR_RST} ]\n" "${msg}"
+    printf "\r%-24s [ OK ]\n" "${msg}"
   else
-    printf "\r%-24s [ ${CLR_ERR}FAIL${CLR_RST} ]\n" "${msg}"
+    printf "\r%-24s [ FAIL ]\n" "${msg}"
     echo "${out}" >&2
     return 1
   fi
@@ -42,7 +31,7 @@ function exec_cmd {
 # Warn user and ask for confirmation.
 # return 0 if user has confirmed the action
 function confirm {
-  echo -e "${CLR_ERR}WARNING!${CLR_RST}"
+  echo -e "WARNING!"
   echo "You are going to initiate kernel memory dump (kdump) on the host system."
   echo "This action will inevitably REBOOT the host system!"
 
@@ -91,9 +80,9 @@ function sreset {
     fi
   done
   if [[ -n "${target}" ]]; then
-    echo -e "         [ ${CLR_OK}OK${CLR_RST} ]"
+    echo -e "         [ OK ]"
   else
-    echo -e "         [ ${CLR_ERR}FAIL${CLR_RST} ]"
+    echo -e "         [ FAIL ]"
     return 1
   fi
 

@@ -13,24 +13,27 @@ GROUP_USER="priv-user"
 # parse command line options
 while [ $# -gt 0 ]; do
   case "$1" in
-    -h | --help )
+    -h | --help)
       echo "Phosphor CLI installer."
       echo "Use: ${0##*/} OPTION..."
+      echo "Default options are specified in brackets."
       echo "  -d, --dir PATH        Path to sysroot (target root directory)"
       echo "  -m, --machine NAME    Target machine name [${MACHINE}]"
       echo "  -a, --admin NAME      Group name for administrators [${GROUP_ADMIN}]"
       echo "  -o, --operator NAME   Group name for operators [${GROUP_OPERATOR}]"
       echo "  -u, --user NAME       Group name for users [${GROUP_USER}]"
       echo "  -h, --help            Print this help and exit"
-      exit 0;;
-    -d | --dir ) INSTALL_ROOT="$2"; shift;;
-    -m | --machine ) MACHINE="$2"; shift;;
-    -a | --admin ) GROUP_ADMIN="$2"; shift;;
-    -o | --operator ) GROUP_OPERATOR="$2"; shift;;
-    -u | --user ) GROUP_USER="$2"; shift;;
-    * )
+      exit 0
+      ;;
+    -d | --dir) INSTALL_ROOT="$2"; shift;;
+    -m | --machine) MACHINE="$2"; shift;;
+    -a | --admin) GROUP_ADMIN="$2"; shift;;
+    -o | --operator) GROUP_OPERATOR="$2"; shift;;
+    -u | --user) GROUP_USER="$2"; shift;;
+    *)
       echo "Invalid argument: $1" >&2
-      exit 1;;
+      exit 1
+      ;;
   esac
   shift
 done

@@ -11,17 +11,18 @@ PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 YES=
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -h | --help )
+    -h | --help)
       echo "Host dump initiator (NMI)."
       echo "Use: ${0##*/} [OPTION...]"
       echo "  -y, --yes     Do not ask for confirmation"
       echo "  -h, --help    Print this help and exit"
-      exit 0;;
-    -y | --yes )
-      YES="$1";;
+      exit 0
+      ;;
+    -y | --yes) YES="$1";;
     * )
       echo "Invalid argument: $1" >&2
-      exit 1;;
+      exit 1
+      ;;
   esac
   shift
 done

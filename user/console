@@ -7,19 +7,20 @@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
-while [[ $# -gt 0 ]]; do
+if [[ $# -gt 0 ]]; then
   case $1 in
-    -h | --help )
+    -h | --help)
       echo "Host console access."
       echo "Use: ${0##*/} [OPTION...]"
       echo "  -h, --help    Print this help and exit"
-      exit 0;;
-    * )
+      exit 0
+      ;;
+    *)
       echo "Invalid argument: $1" >&2
-      exit 1;;
+      exit 1
+      ;;
   esac
-  shift
-done
+fi
 
 cat << EOF
 Starting a Host console connection.

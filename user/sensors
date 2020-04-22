@@ -11,17 +11,19 @@ PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 TYPE=
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -h | --help )
+    -h | --help)
       echo "Show sensors state."
       echo "Use: ${0##*/} [OPTION...] [TYPE]"
       echo "  -h, --help    Print this help and exit"
-      exit 0;;
-    * )
+      exit 0
+      ;;
+    *)
       if [[ -n "${TYPE}" ]]; then
         echo "Invalid argument, type filter already defined" >&2
         exit 1
       fi
-      TYPE="$1";;
+      TYPE="$1"
+      ;;
   esac
   shift
 done

@@ -46,12 +46,13 @@ function set_role {
 
   local group
   case "${role}" in
-    ${ROLE_ADMIN} ) group="${GROUP_ADMIN}";;
-    ${ROLE_OPERATOR} ) group="${GROUP_OPERATOR}";;
-    ${ROLE_USER} ) group="${GROUP_USER}";;
-    * )
+    ${ROLE_ADMIN}) group="${GROUP_ADMIN}";;
+    ${ROLE_OPERATOR}) group="${GROUP_OPERATOR}";;
+    ${ROLE_USER}) group="${GROUP_USER}";;
+    *)
       echo "Invalid role name: ${role}" >&2
-      exit 1;;
+      exit 1
+      ;;
   esac
 
   # add user to the privilege group and set it as primary
@@ -116,7 +117,7 @@ RESTART_SVC=""
 ACTION="help"
 [[ $# -eq 0 ]] || ACTION="$1"
 case "${ACTION}" in
-  help | -h | --help )
+  help | -h | --help)
     echo "User manager."
     echo "Use: ${0##*/} [OPTION...]"
     echo "Options:"
@@ -126,36 +127,38 @@ case "${ACTION}" in
     echo "  setrole NAME ROLE  Set user role (admin, operator or user)"
     echo "  list               Show list of users and their roles"
     echo "  -h, --help         Print this help and exit"
-    exit 0;;
-  create )
+    exit 0
+    ;;
+  create)
     [[ $# -eq 2 ]] || { echo "Invalid arguments" >&2; exit 1; }
     check_name "$2"
     create_user "$2"
     RESTART_SVC="y"
     ;;
-  delete )
+  delete)
     [[ $# -eq 2 ]] || { echo "Invalid arguments" >&2; exit 1; }
     check_name "$2"
     delete_user "$2"
     RESTART_SVC="y"
     ;;
-  passwd )
+  passwd)
     [[ $# -eq 2 ]] || { echo "Invalid arguments" >&2; exit 1; }
     check_name "$2"
     set_password "$2"
     ;;
-  setrole )
+  setrole)
     [[ $# -eq 3 ]] || { echo "Invalid arguments" >&2; exit 1; }
     check_name "$2"
     set_role "$2" "$3"
     RESTART_SVC="y"
     ;;
-  list )
+  list)
     print_list
     ;;
   * )
     echo "Invalid argument: ${ACTION}" >&2
-    exit 1;;
+    exit 1
+    ;;
 esac
 
 [[ -z "${RESTART_SVC}" ]] || systemctl restart xyz.openbmc_project.User.Manager.service
