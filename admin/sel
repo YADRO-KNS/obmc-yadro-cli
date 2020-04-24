@@ -1,0 +1,13 @@
+#!/bin/bash -eu
+
+#
+# CLI: Decode eSEL
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+# elevate self privileges
+[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) $@
+
+exec esel $@
