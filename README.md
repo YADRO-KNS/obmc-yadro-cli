@@ -18,3 +18,14 @@ Each group has its own permissions. The installer (`./install.sh`) creates a
 sudo configuration for each script - links between executable modules and
 Linux groups. This configuration allows for group members to run scripts with
 elevated privileges.
+
+## Adding new features
+New script must be placed into one of the predefined directory:
+- `admin` (administrators);
+- `operator` (operators);
+- `user` (others).
+
+The script must contain description used for constructing system-wide help.
+Description is a comment inside the script started with identifier `CLI:`,
+for example:
+`# CLI: One-line comment that describes command purpose`

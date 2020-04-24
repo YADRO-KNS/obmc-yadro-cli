@@ -1,28 +1,22 @@
-#!/bin/bash -u
+#!/bin/bash -eu
 
-GROUP="$(id -gn)"
+#
+# Help for CLI
+#
 
-ADMIN="false"
-OPERATOR="false"
-if [[ ${GROUP} == %GROUP_ADMIN% ]]; then
-  ADMIN="true"
-  OPERATOR="true"
-elif [[ ${GROUP} == %GROUP_OPERATOR% ]]; then
-  OPERATOR="true"
-fi
+HELP_FILE="/usr/share/cli.help"
+USER_GROUPS="$(groups)"
 
-${OPERATOR} && echo -e "power       Host power control"
-${ADMIN}    && echo -e "led         Chassis LED identify control"
-               echo -e "console     Open host console"
-               echo -e "sensors     Print sensors state"
-               echo -e "inventory   Print inventory list"
-${ADMIN}    && [[ -e /usr/bin/nmi ]] && echo -e "nmi         Initiate kdump on the host system"
-${ADMIN}    && echo -e "logs        Print BMC system logs"
-${ADMIN}    && echo -e "sosreport   Create system state report"
-${ADMIN}    && echo -e "esel        Decode eSEL"
-${ADMIN}    && echo -e "user        User managment"
-${ADMIN}    && echo -e "update      Update BIOS/BMC firmware"
-${ADMIN}    && echo -e "config      Save/restore/reset BMC configuration"
-               echo -e "version     Print BIOS/BMC firmware version"
-               echo -e "helpsh      Print shell help"
-               echo -e "help        Print this help"
+function print {
+  printf "%-12s %s\n" "$1" "$2"
+}
+
+while read -r GRP CMD DESC; do
+  if echo "${USER_GROUPS}" | grep -q ${GRP}; then
+    print "${CMD}" "${DESC}"
+  fi
+done < ${HELP_FILE}
+
+# static help lines
+print "helpsh" "Print shell help"
+print "help" "Print this help"

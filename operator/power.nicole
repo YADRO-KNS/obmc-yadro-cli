@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 #
-# Host power control - wrapper around obmcutil.
+# CLI: Host power control
 #
 
 # prevent modification of executable path

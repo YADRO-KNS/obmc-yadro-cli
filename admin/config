@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 #
-# BMC config backup/restore.
+# CLI: Save/restore/reset BMC configuration
 #
 
 # prevent modification of executable path

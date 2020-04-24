@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 #
-# View BMC system logs.
+# CLI: BMC system logs
 #
 
 # prevent modification of executable path
@@ -13,7 +13,7 @@ CLEAR=
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h | --help)
-      echo "View BMC system logs."
+      echo "BMC system logs."
       echo "Use: ${0##*/} [OPTION...]"
       echo "  -c, --clear    Clear all logs"
       echo "  -v, --verbose  Verbose output"

@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 #
-# Chassis LED identify control.
+# CLI: Chassis LED identify control
 #
 
 # prevent modification of executable path

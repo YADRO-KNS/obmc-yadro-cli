@@ -9,6 +9,7 @@ MACHINE="nicole"
 GROUP_ADMIN="priv-admin"
 GROUP_OPERATOR="priv-operator"
 GROUP_USER="priv-user"
+HELP_FILE="/usr/share/cli.help"
 
 # parse command line options
 while [ $# -gt 0 ]; do
@@ -69,6 +70,7 @@ install_exec_dir() {
   install --mode 0755 -d ${INSTALL_ROOT}${bin_dir}
   sudo_dir="/etc/sudoers.d"
   install --mode 0750 -d ${INSTALL_ROOT}${sudo_dir}
+  install --mode 0755 -d $(dirname ${INSTALL_ROOT}${HELP_FILE})
 
   sudo_file="${INSTALL_ROOT}${sudo_dir}/$(echo ${group_name} | sed 's/-//g')"
 
@@ -88,10 +90,11 @@ install_exec_dir() {
 
     dst_file="${bin_dir}/${file_name}"
     echo "Install ${dst_file}"
-
     install_exec_file ${src_file} ${INSTALL_ROOT}${dst_file}
-
+    # setup sudo
     echo "%${group_name} ALL=(ALL) NOPASSWD: ${dst_file}" >> ${sudo_file}
+    # register command in help
+    echo "${group_name} ${file_name} $(sed -n 's/# *CLI: *//p' ${src_file})" >> ${INSTALL_ROOT}${HELP_FILE}
   done
 
   chmod 0440 ${sudo_file}
@@ -106,7 +109,7 @@ install_exec_dir ${THIS_DIR}/operator ${GROUP_OPERATOR}
 install_exec_dir ${THIS_DIR}/user ${GROUP_USER}
 
 echo "Install help"
-install_exec_file ${THIS_DIR}/help.in ${INSTALL_ROOT}/usr/bin/help
+install -DT --mode 0755 ${THIS_DIR}/help.in ${INSTALL_ROOT}/usr/bin/help
 
 echo "Install default profile"
 install -DT --mode 0644 ${THIS_DIR}/profile.in ${INSTALL_ROOT}/etc/profile.d/default.sh

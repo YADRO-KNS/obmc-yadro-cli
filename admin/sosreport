@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 #
-# System state report.
+# CLI: Create system state report
 #
 
 # prevent modification of executable path

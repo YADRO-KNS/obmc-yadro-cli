@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 #
-# Print inventory list
+# CLI: Print inventory list
 #
 
 # prevent modification of executable path

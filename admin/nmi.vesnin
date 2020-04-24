@@ -1,7 +1,7 @@
 #!/bin/bash -eu
 
 #
-# Initiate kernel memory dump (kdump) on the host system.
+# CLI: Send NMI to the host system (kdump)
 #
 
 # prevent modification of executable path
