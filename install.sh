@@ -94,7 +94,12 @@ install_exec_dir() {
     # setup sudo
     echo "%${group_name} ALL=(ALL) NOPASSWD: ${dst_file}" >> ${sudo_file}
     # register command in help
-    echo "${group_name} ${file_name} $(sed -n 's/# *CLI: *//p' ${src_file})" >> ${INSTALL_ROOT}${HELP_FILE}
+    cmd_desc="$(sed -n 's/^# *CLI: *//p' ${src_file})"
+    if [ -z "${cmd_desc}" ]; then
+      echo "ERROR: Script ${file_name} doesn't contain description" >&2
+      exit 1
+    fi
+    echo "${group_name} ${file_name} ${cmd_desc}" >> ${INSTALL_ROOT}${HELP_FILE}
   done
 
   chmod 0440 ${sudo_file}
