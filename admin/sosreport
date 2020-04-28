@@ -4,16 +4,17 @@
 # CLI: Create system state report
 #
 
+# elevate self privileges
+[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]}) $@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
 # parse command line options
-EXPORT=
 while [[ $# -gt 0 ]]; do
-  case $1 in
+  case "$1" in
     -h | --help)
       echo "Create system state report."
-      echo "Use: ${0##*/} [OPTION...]"
+      echo "Use: $0 [OPTION...]"
       echo "  -h, --help    Print this help and exit"
       exit 0
       ;;
@@ -24,9 +25,6 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
-
-# elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]})
 
 dreport
 echo

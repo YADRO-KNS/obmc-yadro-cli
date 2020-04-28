@@ -4,26 +4,25 @@
 # CLI: Print BMC/BIOS firmware version
 #
 
+# elevate self privileges
+[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]})
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
 # parse command line options
 if [[ $# -gt 0 ]]; then
-  case $1 in
+  case "$1" in
     -h | --help)
       echo "Print BMC/BIOS firmware version."
-      echo "Use: ${0##*/} [OPTION...]"
+      echo "Use: $0 [OPTION...]"
       echo "  -h, --help    Print this help and exit"
       exit 0
       ;;
-    * )
+    *)
       echo "Invalid argument: $1" >&2
       exit 1
       ;;
   esac
 fi
-
-# elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]})
 
 exec fwupdate --version

@@ -4,6 +4,8 @@
 # CLI: Host power control
 #
 
+# elevate self privileges
+[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]}) $@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
@@ -11,10 +13,10 @@ PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 ACTION=
 FORCE=
 while [[ $# -gt 0 ]]; do
-  case $1 in
+  case "$1" in
     -h | --help)
       echo "Host power control."
-      echo "Use: ${0##*/} [OPTION...] ACTION"
+      echo "Use: $0 [OPTION...] ACTION"
       echo "Actions:"
       echo "  on            Power on host"
       echo "  off           Shutdown host"
@@ -22,8 +24,11 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  -f, --force   Force shutdown host (chassis power off)"
       echo "  -h, --help    Print this help and exit"
-      exit 0;;
-    -f | --force) FORCE="$1";;
+      exit 0
+      ;;
+    -f | --force)
+      FORCE="$1"
+      ;;
     on | off | status)
       if [[ -z "${ACTION}" ]]; then
         ACTION="$1"
@@ -39,9 +44,6 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
-
-# elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${FORCE} ${ACTION}
 
 # execute command
 case "${ACTION}" in

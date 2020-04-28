@@ -8,10 +8,10 @@
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
 if [[ $# -gt 0 ]]; then
-  case $1 in
+  case "$1" in
     -h | --help)
       echo "Host console access."
-      echo "Use: ${0##*/} [OPTION...]"
+      echo "Use: $0 [OPTION...]"
       echo "  -h, --help    Print this help and exit"
       exit 0
       ;;

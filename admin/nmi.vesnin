@@ -4,11 +4,10 @@
 # CLI: Send NMI to the host system (kdump)
 #
 
+# elevate self privileges
+[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]})
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
-
-# elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]})
 
 # Execute command.
 # Param 1: command description (message text)

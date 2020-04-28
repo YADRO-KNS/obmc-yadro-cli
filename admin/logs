@@ -4,6 +4,8 @@
 # CLI: BMC system logs
 #
 
+# elevate self privileges
+[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]}) $@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
@@ -11,10 +13,10 @@ PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 VERBOSE=
 CLEAR=
 while [[ $# -gt 0 ]]; do
-  case $1 in
+  case "$1" in
     -h | --help)
       echo "BMC system logs."
-      echo "Use: ${0##*/} [OPTION...]"
+      echo "Use: $0 [OPTION...]"
       echo "  -c, --clear    Clear all logs"
       echo "  -v, --verbose  Verbose output"
       echo "  -h, --help     Print this help and exit"
@@ -22,16 +24,13 @@ while [[ $# -gt 0 ]]; do
       ;;
     -c | --clear) CLEAR="$1";;
     -v | --verbose) VERBOSE="$1";;
-    * )
+    *)
       echo "Invalid argument: $1" >&2
       exit 1
       ;;
   esac
   shift
 done
-
-# elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${VERBOSE} ${CLEAR}
 
 CMD="journalctl"
 if [[ -n "${CLEAR}" ]]; then

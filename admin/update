@@ -4,6 +4,8 @@
 # CLI: Update BMC/BIOS firmware
 #
 
+# elevate self privileges
+[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]}) $@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
@@ -12,18 +14,18 @@ FILE=
 CLEAR=
 YES=
 while [[ $# -gt 0 ]]; do
-  case $1 in
+  case "$1" in
     -h | --help)
       echo "Update BIOS/BMC firmware."
-      echo "Use: ${0##*/} [OPTION...] FILE"
+      echo "Use: $0 [OPTION...] FILE"
       echo "  -c, --clear   Remove the previous BMC configuration after firmware update"
       echo "  -y, --yes     Do not ask for confirmation"
       echo "  -h, --help    Print this help and exit"
       exit 0
       ;;
-    -y | --yes) YES="$1";;
     -c | --clear) CLEAR="$1";;
-    * )
+    -y | --yes) YES="$1";;
+    *)
       if [[ -n "${FILE}" ]]; then
         echo "Invalid argument, file already specified" >&2
         exit 1
@@ -33,9 +35,6 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
-
-# elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) ${YES} ${CLEAR} "${FILE}"
 
 CMD="fwupdate"
 [[ -z "${YES}" ]] || CMD+=" --yes"

@@ -4,15 +4,15 @@
 # CLI: User management
 #
 
+# elevate self privileges
+[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]}) $@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
-
-# elevate self privileges
-[[ ${EUID} -eq 0 ]] || exec sudo $(realpath ${BASH_SOURCE[0]}) $@
 
 ROLE_ADMIN="admin"
 ROLE_OPERATOR="operator"
 ROLE_USER="user"
+
 GROUP_ADMIN="%GROUP_ADMIN%"
 GROUP_OPERATOR="%GROUP_OPERATOR%"
 GROUP_USER="%GROUP_USER%"
@@ -119,7 +119,7 @@ ACTION="help"
 case "${ACTION}" in
   help | -h | --help)
     echo "User management."
-    echo "Use: ${0##*/} [OPTION...]"
+    echo "Use: $0 [OPTION...]"
     echo "Options:"
     echo "  create NAME        Create new user"
     echo "  delete NAME        Delete user"
@@ -155,7 +155,7 @@ case "${ACTION}" in
   list)
     print_list
     ;;
-  * )
+  *)
     echo "Invalid argument: ${ACTION}" >&2
     exit 1
     ;;
