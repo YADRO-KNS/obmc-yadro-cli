@@ -72,7 +72,7 @@ install_exec_dir() {
   install --mode 0750 -d ${INSTALL_ROOT}${sudo_dir}
   install --mode 0755 -d $(dirname ${INSTALL_ROOT}${HELP_FILE})
 
-  sudo_file="${INSTALL_ROOT}${sudo_dir}/$(echo ${group_name} | sed 's/-//g')"
+  sudo_file="${INSTALL_ROOT}${sudo_dir}/cli_$(echo ${group_name} | sed 's/-//g')"
 
   for src_file in ${src_dir}/*; do
     file_name="$(basename ${src_file})"

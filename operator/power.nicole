@@ -5,7 +5,7 @@
 #
 
 # elevate self privileges
-[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]}) $@
+[[ ${EUID} -ne 0 ]] && exec /usr/bin/sudo ${BASH_SOURCE[0]} $@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 

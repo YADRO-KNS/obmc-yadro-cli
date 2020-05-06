@@ -5,7 +5,7 @@
 #
 
 # elevate self privileges
-[[ ${EUID} -ne 0 ]] && exec sudo $(realpath ${BASH_SOURCE[0]}) $@
+[[ ${EUID} -ne 0 ]] && exec /usr/bin/sudo ${BASH_SOURCE[0]} $@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
@@ -16,8 +16,9 @@ DBUS_INTERFACE="xyz.openbmc_project.Led.Group"
 DBUS_PROPERTY="Asserted"
 
 # parse command line options
-ACTION=
-while [[ $# -gt 0 ]]; do
+if [[ $# -eq 0 ]]; then
+  ACTION="state"
+elif [[ $# -eq 1 ]]; then
   case "$1" in
     -h | --help)
       echo "Chassis LED identify control."
@@ -31,20 +32,17 @@ while [[ $# -gt 0 ]]; do
       exit 0
       ;;
     on | off | state)
-      if [[ -z "${ACTION}" ]]; then
-        ACTION="$1"
-      else
-        echo "Invalid argument, action already defined" >&2
-        exit 1
-      fi
+      ACTION="$1"
       ;;
     *)
       echo "Invalid argument: $1" >&2
       exit 1
       ;;
   esac
-  shift
-done
+else
+  echo "Invalid arguments" >&2
+  exit 1
+fi
 
 # set state
 STATE=
