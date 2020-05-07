@@ -108,15 +108,15 @@ echo "Install Phosphor CLI environment to ${INSTALL_ROOT}"
 
 THIS_DIR="$(realpath $(dirname $0))"
 
-install -DT --mode 0755 ${THIS_DIR}/clicmd ${INSTALL_ROOT}/usr/bin/clicmd
+install -DT --mode 0555 ${THIS_DIR}/clicmd ${INSTALL_ROOT}/usr/bin/clicmd
 install_exec_dir ${THIS_DIR}/admin ${GROUP_ADMIN}
 install_exec_dir ${THIS_DIR}/operator ${GROUP_OPERATOR}
 install_exec_dir ${THIS_DIR}/user ${GROUP_USER}
 
 echo "Install help"
-install -DT --mode 0755 ${THIS_DIR}/help.in ${INSTALL_ROOT}/usr/bin/help
+install -DT --mode 0555 ${THIS_DIR}/help.in ${INSTALL_ROOT}/usr/bin/help
 
 echo "Install default profile"
-install -DT --mode 0644 ${THIS_DIR}/profile.in ${INSTALL_ROOT}/etc/profile.d/default.sh
+install -DT --mode 0444 ${THIS_DIR}/profile.in ${INSTALL_ROOT}/etc/profile.d/default.sh
 
 echo "Installation completed successfully"
