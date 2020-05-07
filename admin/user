@@ -4,11 +4,6 @@
 # CLI: User management
 #
 
-# elevate self privileges
-[[ ${EUID} -ne 0 ]] && exec /usr/bin/sudo ${BASH_SOURCE[0]} $@
-# prevent modification of executable path
-PATH="/bin:/sbin:/usr/bin:/usr/sbin"
-
 ROLE_ADMIN="admin"
 ROLE_OPERATOR="operator"
 ROLE_USER="user"

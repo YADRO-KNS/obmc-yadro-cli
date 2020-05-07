@@ -43,21 +43,6 @@ if [ -z "${INSTALL_ROOT}" ]; then
   exit 1
 fi
 
-# Install executable file.
-# param 1: path to source file name
-# param 2: path to destination file name
-install_exec_file() {
-  if [ -e $2 ]; then
-    echo "ERROR: File $2 already exist." >&2
-    exit 1
-  fi
-  sed -e "s/%GROUP_ADMIN%/${GROUP_ADMIN}/g" \
-      -e "s/%GROUP_OPERATOR%/${GROUP_OPERATOR}/g" \
-      -e "s/%GROUP_USER%/${GROUP_USER}/g" \
-      $1 > $2
-  chmod 0755 $2
-}
-
 # Install files from specified directory and configure sudo.
 # param 1: path to source directory with executable scripts
 # param 2: group name whose users may execute scripts
@@ -88,11 +73,25 @@ install_exec_dir() {
       file_name="$(echo ${file_name} | sed -r 's/(.+)\..+|(.*)/\1\2/')"
     fi
 
-    dst_file="${bin_dir}/${file_name}"
-    echo "Install ${dst_file}"
-    install_exec_file ${src_file} ${INSTALL_ROOT}${dst_file}
+    echo "Install ${file_name}"
+    real_file="${bin_dir}/cli_${file_name}"
+    link_file="${bin_dir}/${file_name}"
+    if [ -f "${INSTALL_ROOT}${real_file}" -o -f "${INSTALL_ROOT}${link_file}" ]; then
+      echo "ERROR: File ${file_name} already exist." >&2
+      exit 1
+    fi
+
+    # install script file
+    sed -e "s/%GROUP_ADMIN%/${GROUP_ADMIN}/g" \
+        -e "s/%GROUP_OPERATOR%/${GROUP_OPERATOR}/g" \
+        -e "s/%GROUP_USER%/${GROUP_USER}/g" \
+        ${src_file} > ${INSTALL_ROOT}${real_file}
+    chmod 0400 ${INSTALL_ROOT}${real_file}
+    ln -sr ${INSTALL_ROOT}${bin_dir}/clicmd ${INSTALL_ROOT}${link_file}
+
     # setup sudo
-    echo "%${group_name} ALL=(ALL) NOPASSWD: ${dst_file}" >> ${sudo_file}
+    echo "%${group_name} ALL=(ALL) NOPASSWD: ${link_file}" >> ${sudo_file}
+
     # register command in help
     cmd_desc="$(sed -n 's/^# *CLI: *//p' ${src_file})"
     if [ -z "${cmd_desc}" ]; then
@@ -109,6 +108,7 @@ echo "Install Phosphor CLI environment to ${INSTALL_ROOT}"
 
 THIS_DIR="$(realpath $(dirname $0))"
 
+install -DT --mode 0755 ${THIS_DIR}/clicmd ${INSTALL_ROOT}/usr/bin/clicmd
 install_exec_dir ${THIS_DIR}/admin ${GROUP_ADMIN}
 install_exec_dir ${THIS_DIR}/operator ${GROUP_OPERATOR}
 install_exec_dir ${THIS_DIR}/user ${GROUP_USER}

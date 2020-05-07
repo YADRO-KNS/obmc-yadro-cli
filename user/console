@@ -4,9 +4,6 @@
 # CLI: Attach to the host's console
 #
 
-# prevent modification of executable path
-PATH="/bin:/sbin:/usr/bin:/usr/sbin"
-
 if [[ $# -gt 0 ]]; then
   case "$1" in
     -h | --help)

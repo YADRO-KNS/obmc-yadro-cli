@@ -1,0 +1,24 @@
+#!/bin/bash -eu
+
+#
+# Base CLI command handler.
+# This script used for setting up the envrinment and elevating priveleges for
+# executing CLI commands.
+#
+
+# prevent modification of executable path
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+
+# real command to execute
+REAL_CMD="/usr/bin/cli_$(basename "${BASH_SOURCE[0]}")"
+if [[ ! -f "${REAL_CMD}" ]]; then
+  echo "Invalid CLI command: ${BASH_SOURCE[0]}" >&2
+  exit 2
+fi
+
+# elevate privileges
+if [[ ${EUID} -ne 0 ]]; then
+  exec sudo ${BASH_SOURCE[0]} $@
+fi
+
+source "${REAL_CMD}"

@@ -4,11 +4,6 @@
 # CLI: Chassis LED identify control
 #
 
-# elevate self privileges
-[[ ${EUID} -ne 0 ]] && exec /usr/bin/sudo ${BASH_SOURCE[0]} $@
-# prevent modification of executable path
-PATH="/bin:/sbin:/usr/bin:/usr/sbin"
-
 # D-Bus object descriptions to manage the LED
 DBUS_SERVICE="xyz.openbmc_project.LED.GroupManager"
 DBUS_OBJECT="/xyz/openbmc_project/led/groups/enclosure_identify"

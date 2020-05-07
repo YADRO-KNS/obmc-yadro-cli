@@ -4,7 +4,4 @@
 # CLI: Print inventory list
 #
 
-# elevate self privileges
-[[ ${EUID} -ne 0 ]] && exec /usr/bin/sudo ${BASH_SOURCE[0]} $@
-
-exec /usr/bin/lsinventory $@
+exec lsinventory $@
