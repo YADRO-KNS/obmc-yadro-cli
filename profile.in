@@ -1,14 +1,36 @@
-# Default profile
+#!/bin/bash
 
-# replace built-in help command
-alias help="/usr/bin/help"
-alias helpsh="builtin help"
-
-# add sbin to path
-PATH="${PATH}:/sbin:/usr/sbin"
+#
+# Default profile.
+#
 
 # greeting
 cat << EOF
 Welcome to BMC for $(sed -n 's/OPENBMC_TARGET_MACHINE="\(.*\)"/\1/p' /etc/os-release) server!
 Type 'help' to print the list of useful commands.
 EOF
+
+# replace built-in help command
+alias helpsh="builtin help"
+function help {
+  local fmt="%-12s %s\n"
+  local cmd desc
+  while read cmd desc; do
+    printf "${fmt}" "${cmd}" "${desc}"
+  done < "/usr/share/cli/help"
+  # static help lines
+  printf "${fmt}" "helpsh" "Print shell help"
+  printf "${fmt}" "help" "Print this help"
+}
+
+# callback function for bash autocomplete
+function _cli_completion {
+  local cmd="${COMP_WORDS[0]}"
+  local subcmd="$(echo "${COMP_WORDS[*]:1}" | sed 's/\w\+$//')"
+  local words="$(${cmd} autocomplete ${subcmd})"
+  if [[ -z "${words}" ]] && [[ ${COMP_CWORD} -gt 2 ]]; then
+    COMPREPLY=($(compgen -f -- ${COMP_WORDS[COMP_CWORD]}))
+  else
+    COMPREPLY=($(compgen -W "${words}" -- ${COMP_WORDS[COMP_CWORD]}))
+  fi
+}

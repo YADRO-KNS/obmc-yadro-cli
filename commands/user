@@ -1,0 +1,224 @@
+#!/bin/bash -eu
+
+#
+# CLI: User management
+#
+
+ROLE_ADMIN="admin"
+ROLE_OPERATOR="operator"
+ROLE_USER="user"
+
+GROUP_ADMIN="%GROUP_ADMIN%"
+GROUP_OPERATOR="%GROUP_OPERATOR%"
+GROUP_USER="%GROUP_USER%"
+GROUP_IPMI="ipmi"
+GROUP_SUDO="sudo"
+
+# Lookup for group by role name
+function role_to_group {
+  case "$1" in
+    ${ROLE_ADMIN})    echo "${GROUP_ADMIN}";;
+    ${ROLE_OPERATOR}) echo "${GROUP_OPERATOR}";;
+    ${ROLE_USER})     echo "${GROUP_USER}";;
+    *)
+      echo "Invalid role name: $1" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Lookup for role by group name
+function group_to_role {
+  case "$1" in
+    ${GROUP_ADMIN})    echo "${ROLE_ADMIN}";;
+    ${GROUP_OPERATOR}) echo "${ROLE_OPERATOR}";;
+    ${GROUP_USER})     echo "${ROLE_USER}";;
+    *)
+      echo "Invalid group name: $1" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Check if user account can be managed by a local admin
+function check_user {
+  if ! id -nG "$1" 2>/dev/null | grep -q "\b${GROUP_SUDO}\b"; then
+    echo "Invalid user: $1" >&2
+    return 1
+  fi
+}
+
+# Set role for specified account
+function set_role {
+  local name="$1"
+  local role="$2"
+
+  local group="$(role_to_group "${role}")"
+
+  # remove from all groups and set the primary one
+  usermod --gid ${group} --groups '' ${name}
+
+  # grant sudo
+  groupmems --add ${name} --group ${GROUP_SUDO}
+
+  # admins have max privileges, add them to all groups and grant IPMI access
+  if [[ ${role} == ${ROLE_ADMIN} ]]; then
+    groupmems --add ${name} --group ${GROUP_IPMI}
+    groupmems --add ${name} --group ${GROUP_OPERATOR}
+    groupmems --add ${name} --group ${GROUP_USER}
+  fi
+
+  systemctl restart xyz.openbmc_project.User.Manager.service
+}
+
+# @sudo cmd_create admin
+# @doc cmd_create
+# Create a new user
+#   -n, --name NAME   User name
+#   -r, --role ROLE   Role for user (admin, operator or user)
+function cmd_create {
+  local name=""
+  local role="${ROLE_USER}"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -n | --name)
+        [[ $# -gt 1 ]] || abort_badarg "Name is not specified"
+        name="$2"
+        shift
+        ;;
+      -r | --role)
+        [[ $# -gt 1 ]] || abort_badarg "Role is not specified"
+        role="$2"
+        shift
+        ;;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+  if [[ ! ${name} =~ ^[\.a-zA-Z0-9_-]+$ ]]; then
+    echo "Invalid user name: ${name}" >&2
+    return 1
+  fi
+
+  local group="$(role_to_group "${role}")"
+  useradd --gid ${group} ${name}
+  set_role ${name} ${role}
+
+  echo "User ${name} created."
+}
+
+# @doc cmd_create-ldap
+# Create a new LDAP user
+#function cmd_create-ldap {
+#  not implemented
+#}
+
+# @sudo cmd_show admin
+# @doc cmd_show
+# Show specific user
+#   USERNAME...    Show user with specific name (multiple names can be added)
+function cmd_show {
+  while [[ $# -gt 0 ]]; do
+    local user="$1"
+    local role="$(group_to_role "$(id -g -n "${user}")")"
+    echo "${user}: ${role}"
+    shift
+  done
+}
+
+# @sudo cmd_list admin
+# @doc cmd_list
+# Show list of users
+#   -r, --role ROLE  Shows list of all users with the specific role
+function cmd_list {
+  if [[ $# -eq 2 ]] && [[ $1 =~ --?r(ole)? ]]; then
+    local group="$(group_to_role "$1")"
+  else
+    # all and only custom users are members of "sudo" group
+    local group="${GROUP_SUDO}"
+  fi
+
+  local user
+  for user in $(groupmems --list --group ${group} | sort); do
+    cmd_show "${user}"
+  done
+}
+
+# @doc cmd_show-ldap
+# Show LDAP users
+#function cmd_show-ldap {
+#  not implemented
+#}
+
+# @sudo cmd_delete admin
+# @doc cmd_delete
+# Delete user
+#   USERNAME    User account name
+function cmd_delete {
+  if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
+    echo "User name is not specified" >&2
+    return 1
+  fi
+
+  local name="$1"
+  check_user "${name}"
+  usermod --groups '' ${name}
+  deluser --remove-home ${name}
+  systemctl restart xyz.openbmc_project.User.Manager.service
+  echo "User ${name} removed."
+}
+
+# @doc cmd_set
+# Operations with user account
+function cmd_set {
+  subcommand "$@"
+}
+
+# @sudo cmd_set_password admin
+# @doc cmd_set_password
+# Update user password
+#   USERNAME    User account name
+function cmd_set_password {
+  if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
+    echo "User name is not specified" >&2
+    return 1
+  fi
+  check_user "$1"
+  passwd "$1"
+}
+
+# @sudo cmd_set_role admin
+# @doc cmd_set_role
+# Update user role
+#   -n, --name NAME   User name
+#   -r, --role ROLE   Role for user (admin, operator or user)
+function cmd_set_role {
+  local name=""
+  local role=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -n | --name)
+        [[ $# -gt 1 ]] || abort_badarg "Name is not specified"
+        name="$2"
+        shift
+        ;;
+      -r | --role)
+        [[ $# -gt 1 ]] || abort_badarg "Role is not specified"
+        role="$2"
+        shift
+        ;;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  check_user "${name}"
+  set_role "${name}" "${role}"
+  echo "User ${name} now has ${role} privileges."
+}
+
+# @doc cmd_sessions
+# Manage user sessions
+#function cmd_sessions {
+#  not implemented
+#}

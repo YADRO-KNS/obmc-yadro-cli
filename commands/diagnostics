@@ -1,0 +1,180 @@
+#!/bin/bash -eu
+
+#
+# CLI: Diagnostic operations
+#
+
+# D-Bus object descriptions to manage the LED
+LED_DBUS_SERVICE="xyz.openbmc_project.LED.GroupManager"
+LED_DBUS_OBJECT="/xyz/openbmc_project/led/groups/enclosure_identify"
+LED_DBUS_INTERFACE="xyz.openbmc_project.Led.Group"
+LED_DBUS_PROPERTY="Asserted"
+
+# @doc cmd_led
+# Operations with identification LED
+function cmd_led {
+  subcommand "$@"
+}
+
+# @sudo cmd_led_status admin,operator,user
+# @doc cmd_led_status
+# Check the identification LED status
+function cmd_led_status {
+  expect_noarg "$@"
+  local state="$(busctl get-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
+                                     ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
+                                     | awk '{print $NF}')"
+  case "${state}" in
+    true) state="ON";;
+    false) state="OFF";;
+    *) state="Unknown";;
+  esac
+  echo "Chassis identification LED: ${state}"
+}
+
+# @sudo cmd_led_on admin,operator
+# @doc cmd_led_on
+# Turn the identification LED on
+function cmd_led_on {
+  expect_noarg "$@"
+  busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
+                      ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
+                      b true
+  cmd_led_status
+}
+
+# @sudo cmd_led_off admin,operator
+# @doc cmd_led_off
+# Turn the identification LED off
+function cmd_led_off {
+  expect_noarg "$@"
+  busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
+                      ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
+                      b false
+  cmd_led_status
+}
+
+# @doc cmd_intrusion
+# Intrusion sensor operations
+#function cmd_intrusion {
+#  subcommand "$@"
+#}
+
+# @doc cmd_intrusion_show
+# Show status of intrusion alert
+#function cmd_intrusion_show {
+#  not implemented
+#}
+
+# @doc cmd_intrusion_clear
+# Clear intrusion alert
+#function cmd_intrusion_clear {
+#  not implemented
+#}
+
+# @doc cmd_callhome
+# CallHome operations
+#function cmd_callhome {
+#  subcommand "$@"
+#}
+
+# @doc cmd_callhome_configure
+# Configure location for CallHome reports
+#function cmd_callhome_configure {
+#  not implemented
+#}
+
+# @doc cmd_callhome_send
+# Send CallHome report
+#function cmd_callhome_send {
+#  not implemented
+#}
+
+# @doc cmd_callhome_use
+# Toggle CallHome feature
+#function cmd_callhome_use {
+#  not implemented
+#}
+
+# @doc cmd_callhome_status
+# Check CallHome feature status
+#function cmd_callhome_status {
+#  not implemented
+#}
+
+# Create dreport via D-Bus call
+function supportbundle_dbus {
+  local mgr_svc="xyz.openbmc_project.Dump.Manager"
+  local mgr_obj="/xyz/openbmc_project/dump"
+  local dump_dir="/var/lib/phosphor-debug-collector/dump"
+
+  echo "Creating SOS report..."
+
+  # remove previous reports
+  busctl call ${mgr_svc} ${mgr_obj} xyz.openbmc_project.Collection.DeleteAll DeleteAll
+  # create new report
+  local entry="$(busctl --list call ${mgr_svc} ${mgr_obj} xyz.openbmc_project.Dump.Create CreateDump)"
+  if [[ -z "${entry}" ]]; then
+    return 1
+  fi
+  # 'u 4' -> '4'
+  entry="${entry##* }"
+  # wait for report complete
+  mapper wait ${mgr_obj}/entry/${entry}
+  # get timestamp to construct file name
+  local elapsed="$(busctl --list get-property ${mgr_svc} \
+                          ${mgr_obj}/entry/${entry} \
+                          xyz.openbmc_project.Time.EpochTime Elapsed)"
+  if [[ -z "${elapsed}" ]]; then
+    return 1
+  fi
+  # 't 1568116858' -> '1568116858'
+  elapsed="${elapsed##* }"
+
+  local filename="/var/lib/phosphor-debug-collector/dumps/obmcdump_${entry}_${elapsed}.tar.xz"
+  if [[ -f ${filename} ]]; then
+    echo "Report created: ${filename}"
+  else
+    return 1
+  fi
+}
+
+# Create dreport directly via console.
+function supportbundle_direct {
+  dreport -v
+  echo
+  echo "Report created: /tmp/obmcdump_NNNNNNNN_NNNNNNNNNN.tar.xz"
+}
+
+# @sudo cmd_supportbundle admin,operator
+# @doc cmd_supportbundle
+# Report for techsupport
+function cmd_supportbundle {
+  expect_noarg "$@"
+  # try to gather report over D-Bus, if it fails - call dreport directly
+  supportbundle_dbus || supportbundle_direct
+}
+
+# @doc cmd_ping
+# IPv4 ping from BMC
+function cmd_ping {
+  ping "$@"
+}
+
+# @doc cmd_ping6
+# IPv6 ping from BMC
+function cmd_ping6 {
+  ping6 "$@"
+}
+
+# @doc cmd_traceroute
+# IPv4 traceroute from BMC
+function cmd_traceroute {
+  traceroute "$@"
+}
+
+# @doc cmd_netstat
+# Network information from BMC
+function cmd_netstat {
+  netstat "$@"
+}
