@@ -4,12 +4,24 @@
 # Installer.
 #
 
+THIS_DIR="$(realpath "$(dirname "$0")")"
 INSTALL_ROOT=""
 MACHINE="nicole"
+
+ROLE_ADMIN="admin"
+ROLE_OPERATOR="operator"
+ROLE_USER="user"
+
 GROUP_ADMIN="priv-admin"
 GROUP_OPERATOR="priv-operator"
 GROUP_USER="priv-user"
-HELP_FILE="/usr/share/cli.help"
+
+BIN_DIR="/usr/bin"
+SHARE_DIR="/usr/share/cli"
+SUDO_DIR="/etc/sudoers.d"
+
+DEFAULT_PROFILE="/etc/profile.d/default.sh"
+HELP_FILE="${SHARE_DIR}/help"
 
 # parse command line options
 while [ $# -gt 0 ]; do
@@ -43,80 +55,88 @@ if [ -z "${INSTALL_ROOT}" ]; then
   exit 1
 fi
 
-# Install files from specified directory and configure sudo.
-# param 1: path to source directory with executable scripts
-# param 2: group name whose users may execute scripts
-install_exec_dir() {
-  src_dir="$1"
-  group_name="$2"
+# Install script file.
+# param: path to the script file to install
+install_cli_script() {
+  src_file="$1"
+  cmd_name="$(basename "${src_file}" | sed -r 's/(.+)\..+|(.*)/\1\2/')"
+  cmd_desc="$(sed -n 's/^# *CLI: *//p' "${src_file}")"
+  real_file="${SHARE_DIR}/${cmd_name}"
+  link_file="${BIN_DIR}/${cmd_name}"
+  sudo_file="${INSTALL_ROOT}${SUDO_DIR}/cli_${cmd_name}"
 
-  # prepare installation directories
-  bin_dir="/usr/bin"
-  install --mode 0755 -d ${INSTALL_ROOT}${bin_dir}
-  sudo_dir="/etc/sudoers.d"
-  install --mode 0750 -d ${INSTALL_ROOT}${sudo_dir}
-  install --mode 0755 -d $(dirname ${INSTALL_ROOT}${HELP_FILE})
-
-  sudo_file="${INSTALL_ROOT}${sudo_dir}/cli_$(echo ${group_name} | sed 's/-//g')"
-
-  for src_file in ${src_dir}/*; do
-    file_name="$(basename ${src_file})"
-
-    # filter out by target machine
-    postfix="$(echo "${file_name}" | sed -r 's/.+\.(.+)|.*/\1/')"
-    if [ -n "${postfix}" ]; then
-      if [ "${postfix}" != "${MACHINE}" ]; then
-        echo "Skip ${file_name} (${postfix}!=${MACHINE})"
-        continue
-      fi
-      # remove postfix (target machine) from file name
-      file_name="$(echo ${file_name} | sed -r 's/(.+)\..+|(.*)/\1\2/')"
-    fi
-
-    echo "Install ${file_name}"
-    real_file="${bin_dir}/cli_${file_name}"
-    link_file="${bin_dir}/${file_name}"
-    if [ -f "${INSTALL_ROOT}${real_file}" -o -f "${INSTALL_ROOT}${link_file}" ]; then
-      echo "ERROR: File ${file_name} already exist." >&2
+  # check
+  for check_file in ${real_file} ${link_file} ${sudo_file}; do
+    if [ -e "${INSTALL_ROOT}${check_file}" ]; then
+      echo "ERROR: File ${check_file} already exist." >&2
       exit 1
     fi
-
-    # install script file
-    sed -e "s/%GROUP_ADMIN%/${GROUP_ADMIN}/g" \
-        -e "s/%GROUP_OPERATOR%/${GROUP_OPERATOR}/g" \
-        -e "s/%GROUP_USER%/${GROUP_USER}/g" \
-        ${src_file} > ${INSTALL_ROOT}${real_file}
-    chmod 0400 ${INSTALL_ROOT}${real_file}
-    ln -sr ${INSTALL_ROOT}${bin_dir}/clicmd ${INSTALL_ROOT}${link_file}
-
-    # setup sudo
-    echo "%${group_name} ALL=(ALL) NOPASSWD: ${link_file}" >> ${sudo_file}
-
-    # register command in help
-    cmd_desc="$(sed -n 's/^# *CLI: *//p' ${src_file})"
-    if [ -z "${cmd_desc}" ]; then
-      echo "ERROR: Script ${file_name} doesn't contain description" >&2
-      exit 1
-    fi
-    echo "${group_name} ${file_name} ${cmd_desc}" >> ${INSTALL_ROOT}${HELP_FILE}
   done
+  unset check_file
+  if [ -z "${cmd_desc}" ]; then
+    echo "ERROR: Script ${cmd_name} doesn't contain description" >&2
+    exit 1
+  fi
 
-  chmod 0440 ${sudo_file}
+  # create destination dirs
+  install --mode 0755 -d "${INSTALL_ROOT}${BIN_DIR}"
+  install --mode 0755 -d "${INSTALL_ROOT}${SHARE_DIR}"
+  install --mode 0750 -d "${INSTALL_ROOT}${SUDO_DIR}"
+
+  # install script file with link
+  sed -e "s/%GROUP_ADMIN%/${GROUP_ADMIN}/g" \
+      -e "s/%GROUP_OPERATOR%/${GROUP_OPERATOR}/g" \
+      -e "s/%GROUP_USER%/${GROUP_USER}/g" \
+      "${src_file}" > "${INSTALL_ROOT}${real_file}"
+  chmod 0444 "${INSTALL_ROOT}${real_file}"
+  ln -sr "${INSTALL_ROOT}${BIN_DIR}/clicmd" "${INSTALL_ROOT}${link_file}"
+
+  # setup sudo
+  sed -n '/#\s*@sudo/s/.*@sudo\s*cmd_//p' "${src_file}" | while read cmd roles; do
+    if [ -z "${cmd}" -o -z "${roles}" ]; then
+      echo "ERROR: Invalid @sudo entry, file ${src_file}, command ${cmd}" >&2
+      exit 1
+    fi
+    cmd="$(echo "${cmd}" | tr '_' ' ')"
+    for role in $(echo "${roles}" | tr ',' ' '); do
+      case "${role}" in
+        ${ROLE_ADMIN})    group="${GROUP_ADMIN}";;
+        ${ROLE_OPERATOR}) group="${GROUP_OPERATOR}";;
+        ${ROLE_USER})     group="${GROUP_USER}";;
+        *)
+          echo "ERROR: Unknown role ${role} in file ${src_file}, command ${cmd}" >&2
+          exit 1;;
+      esac
+      echo "%${group} ALL=(ALL) NOPASSWD: ${link_file} ${cmd}" >> "${sudo_file}"
+      echo "%${group} ALL=(ALL) NOPASSWD: ${link_file} ${cmd} *" >> "${sudo_file}"
+    done
+  done
+  unset cmd roles role group
+  chmod 0440 "${sudo_file}"
+
+  # add command to autocompletion
+  echo "complete -F _cli_completion ${cmd_name}" >> "${INSTALL_ROOT}${DEFAULT_PROFILE}"
+
+  # register command in help
+  echo "${cmd_name} ${cmd_desc}" >> "${INSTALL_ROOT}${HELP_FILE}"
+
+  unset sudo_file link_file real_file cmd_desc cmd_name src_file
 }
 
 echo "Install Phosphor CLI environment to ${INSTALL_ROOT}"
 
-THIS_DIR="$(realpath $(dirname $0))"
+install -DT --mode 0555 "${THIS_DIR}/clicmd" "${INSTALL_ROOT}/usr/bin/clicmd"
+install -DT --mode 0644 "${THIS_DIR}/profile.in" "${INSTALL_ROOT}${DEFAULT_PROFILE}"
 
-install -DT --mode 0555 ${THIS_DIR}/clicmd ${INSTALL_ROOT}/usr/bin/clicmd
-install_exec_dir ${THIS_DIR}/admin ${GROUP_ADMIN}
-install_exec_dir ${THIS_DIR}/operator ${GROUP_OPERATOR}
-install_exec_dir ${THIS_DIR}/user ${GROUP_USER}
-
-echo "Install help"
-install -DT --mode 0555 ${THIS_DIR}/help.in ${INSTALL_ROOT}/usr/bin/help
-
-echo "Install default profile"
-install -DT --mode 0444 ${THIS_DIR}/profile.in ${INSTALL_ROOT}/etc/profile.d/default.sh
+for SRC_FILE in "${THIS_DIR}/commands"/*; do
+  # filter out by target machine
+  SRC_TARGET="$(basename "${SRC_FILE}" | sed -r 's/.+\.(.+)|.*/\1/')"
+  if [ -n "${SRC_TARGET}" -a "${SRC_TARGET}" != "${MACHINE}" ]; then
+    echo "Skip '$(basename "${SRC_FILE}")' (${SRC_TARGET}!=${MACHINE})"
+  else
+    echo "Install '$(basename "${SRC_FILE}")' command script"
+    install_cli_script "${SRC_FILE}"
+  fi
+done
 
 echo "Installation completed successfully"

@@ -1,0 +1,76 @@
+#!/bin/bash -eu
+
+#
+# CLI: System health information
+#
+
+# @sudo cmd_inventory admin,operator
+# @doc cmd_inventory
+# System inventory
+function cmd_inventory {
+  lsinventory "$@"
+}
+
+# @sudo cmd_sensors admin,operator
+# @doc cmd_sensors
+# Sensor readings
+function cmd_sensors {
+  lssensors "$@"
+}
+
+# @doc cmd_logs
+# Operations with logs
+function cmd_logs {
+  subcommand "$@"
+}
+
+# @doc cmd_logs_list
+# Get list of system logs
+#function cmd_logs_list {
+#  not implemented
+#}
+
+# @sudo cmd_logs_show admin,operator
+# @doc cmd_logs_show
+# Get system logs
+function cmd_logs_show {
+  expect_noarg "$@"
+  journalctl --no-hostname --no-pager
+}
+
+# @sudo cmd_logs_export admin,operator
+# @doc cmd_logs_export
+# Export system logs
+function cmd_logs_export {
+  expect_noarg "$@"
+  local file="/tmp/bmc_$(date +'%Y%m%d_%H%M%S').log"
+  journalctl --no-hostname --no-pager --verbose > "${file}"
+  echo "Logs are exported to the file ${file}."
+}
+
+# @sudo cmd_logs_clear admin
+# @doc cmd_logs_clear
+# Clear system logs
+function cmd_logs_clear {
+  expect_noarg "$@"
+  echo "All logs will be cleared, this event will be recorded to blank audit log."
+  confirm
+  journalctl --vacuum-time=1s
+  echo "All logs are cleared."
+}
+
+# @sudo cmd_sel admin,operator
+# @doc cmd_sel
+# Decode eSEL
+#  ID    Shown eSEL record with specified ID
+function cmd_sel {
+  local sel_id=""
+  if [[ $# -gt 0 ]]; then
+    sel_id="$1"
+  fi
+  if [[ -n "${sel_id}" ]]; then
+    esel --bmc "${sel_id}"
+  else
+    esel --bmc-list
+  fi
+}

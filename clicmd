@@ -1,25 +1,114 @@
 #!/bin/bash -eu
 
-#
 # Base CLI command handler.
-# This script is used for setting up the environment and elevating privileges
-# for executing CLI commands.
-#
+# This script is used for setting up the environment, elevating privileges
+# and handling hierarchical commands.
 
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
 # command to execute
 USER_CMD="${BASH_SOURCE[0]}"
-REAL_CMD="/usr/bin/cli_$(basename "${USER_CMD}")"
+REAL_CMD="/usr/share/cli/$(basename "${USER_CMD}")"
 if [[ ! -f "${REAL_CMD}" ]]; then
   echo "Invalid CLI command: ${USER_CMD}" >&2
   exit 2
 fi
 
-# elevate privileges
-if [[ ${EUID} -ne 0 ]]; then
-  exec sudo ${USER_CMD} $@
-fi
+# Handle subcommand that requires additional arguments.
+function subcommand {
+  local parent="${FUNCNAME[1]}"
+  declare -a children=($(declare -F | sed -n "/${parent}_[^_]*$/s/.* //p"))
+
+  if [[ $# -eq 0 ]] || [[ $1 =~ ^-*h(elp)?$ ]]; then
+    # print help as a list of subcommands at the current layer
+    print_help "${parent}" | head -n 1
+    local cmd
+    for cmd in ${children[*]}; do
+      printf "%-16s " "${cmd#${parent}_}"
+      print_help "${cmd}" | head -n 1
+    done
+    return
+  fi
+
+  # check subcommand for existence
+  local sub="$1"
+  shift
+  local cmd="${parent}_${sub}"
+  if [[ ! " ${children[*]} " =~ " ${cmd} " ]]; then
+    echo "Invalid argument: ${sub}" >&2
+    return 1
+  fi
+
+  # handle help request for command, if command does not have own help info
+  if [[ $# -ne 0 ]] && [[ $1 =~ ^-*h(elp)?$ ]] && ! declare -F | grep -q "${cmd}_[^_]*$"; then
+    if [[ $(print_help "${cmd}" | wc -l) -gt 1 ]]; then
+      print_help "${cmd}"
+      return
+    fi
+  fi
+
+  # if command has @sudo tag - we need to run the function with elevated privileges
+  if grep -q "^#\\s*@sudo\\s\\+${cmd}\\s" "${REAL_CMD}" && [[ ${EUID} -ne 0 ]]; then
+    local sub_path="${cmd/#cmd_}"
+    exec sudo ${USER_CMD} ${sub_path//_/ } "$@"
+  fi
+
+  # execute subcommand
+  ${cmd} "$@"
+}
+
+# Print help for specified command.
+function print_help {
+  sed -n "/^#\\s\\+@doc\\s\\+${1}\\s*$/,/^function/ s/^#\\s*//p" "${REAL_CMD}" | tail -n+2
+}
+
+# Bash auto completion support: print subcommands
+function autocomplete {
+  local parent="cmd"
+  while [[ $# -gt 0 ]]; do
+    parent+="_$1"
+    shift
+  done
+  declare -F | sed -n "/${parent}_[^_]*$/s/.* ${parent}_//p"
+}
+
+# Ask user for confirmation.
+function confirm {
+  local yn
+  read -p "Are you sure? (Type 'yes' to continue) " yn
+  if [[ ${yn} != yes ]]; then
+    echo "Aborted by user" >&2
+    return 1
+  fi
+}
+
+# Abort execution because of invalid argument.
+function abort_badarg {
+  echo "Invalid argument: ${1:-?}" >&2
+  return 1
+}
+
+# Abort execution if at least one argument exists
+function expect_noarg {
+  if [[ $# -ne 0 ]]; then
+    echo "Unexpected argument: $1" >&2
+    return 1
+  fi
+}
+
+# Top level command handler.
+function cmd {
+  subcommand "$@"
+}
 
 source "${REAL_CMD}"
+
+if [[ $# -ne 0 ]] && [[ $1 == autocomplete ]]; then
+  # Special case - request for bash autocompletion
+  shift
+  autocomplete "$@"
+else
+  # Redirect processing to the top level handler
+  cmd "$@"
+fi

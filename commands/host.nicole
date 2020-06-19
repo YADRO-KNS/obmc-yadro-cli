@@ -1,0 +1,255 @@
+#!/bin/bash -eu
+
+#
+# CLI: Host operations
+#
+
+# @sudo cmd_info admin,operator
+# @doc cmd_info
+# View the general host information
+function cmd_info {
+  expect_noarg "$@"
+  obmcutil status | sed 's/xyz.*\.//'
+}
+
+# @doc cmd_boot
+# Boot configuration
+function cmd_boot {
+  subcommand "$@"
+}
+
+# @doc cmd_boot_next
+# Choose boot source for the next boot
+#   -l, --local
+#   -p, --pxe
+#   -s, --san
+#   -u, --usb
+#   -m, --media
+#function cmd_boot_next {
+#  not implemented
+#}
+
+# @doc cmd_boot_persistent
+# Choose default boot source
+#   -l, --local
+#   -p, --pxe
+#   -s, --san
+#   -u, --usb
+#   -m, --media
+#function cmd_boot_persistent {
+#  not implemented
+#}
+
+# @doc cmd_boot_status
+# Show actual setting for boot source
+#function cmd_boot_status {
+#  not implemented
+#}
+
+# @sudo cmd_boot_progress admin,operator
+# @doc cmd_boot_progress
+# Show host boot progress status
+function cmd_boot_progress {
+  expect_noarg "$@"
+  obmcutil status | sed 's/xyz.*\.//'
+}
+
+# @doc cmd_power
+# Host power actions, capping and usage
+function cmd_power {
+  subcommand "$@"
+}
+
+# @sudo cmd_power_on admin,operator
+# @doc cmd_power_on
+# Turn the host on
+function cmd_power_on {
+  expect_noarg "$@"
+  obmcutil poweron
+  echo "Chassis power is switched on, host is booting up."
+}
+
+# @sudo cmd_power_off admin,operator
+# @doc cmd_power_off
+# Turn the host off
+#  -f, --forced    Forced shutdown
+#  -y, --yes       Do not ask for confirmation
+function cmd_power_off {
+  local force=""
+  local yes=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -f | --force) force="y";;
+      -y | --yes) yes="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  if [[ -n "${force}" ]]; then
+    echo "Host will be shut down forcefully. Data loss may occur."
+  else
+    echo "Host will be turned off."
+  fi
+
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  if [[ -n "${force}" ]]; then
+    obmcutil chassisoff
+    echo "Chassis power is switched off, host is down."
+  else
+    obmcutil poweroff
+    echo "Shutdown signal sent to host, waiting to power the system off."
+  fi
+}
+
+# @doc cmd_power_reboot
+# Performs host reboot
+#function cmd_power_reboot {
+#  not implemented
+#}
+
+# @sudo cmd_power_status admin,operator
+# @doc cmd_power_status
+# Get host power status
+function cmd_power_status {
+  expect_noarg "$@"
+  obmcutil status | sed 's/xyz.*\.//'
+}
+
+# @doc cmd_power_capping
+# Configure power capping
+#   -d, --disable       Disable power capping
+#   -e, --enable WATTS  Enable power capping
+#function cmd_power_capping {
+#  not implemented
+#}
+
+# @doc cmd_power_usage
+# View power usage
+#function cmd_power_usage {
+#  not implemented
+#}
+
+# @doc cmd_console
+# Open virtual console
+function cmd_console {
+  expect_noarg "$@"
+  cat << EOF
+Starting a Host console connection.
+Send <CR>~. to terminate it.
+If connected via SSH, add extra ~ characters, one per SSH connection.
+EOF
+  exec obmc-console-client
+}
+
+# Send SRESET via NMI (implementation for Vesnin)
+function nmi_vesnin {
+  local pdbg="pdbg --backend=i2c --device=/dev/i2c-4"
+  local occ_svc="org.open_power.OCC.Control"
+  local occ_obj="/org/open_power/control/occ0"
+  local occ_iface="org.open_power.OCC.Status"
+  local occ_prop="OccActive"
+
+  # Disable OCC control for CPU 0, it is needed to free the I2C channel before
+  # pdbg call, because it used as communication between BMC and target host's CPU.
+  echo "Stop OCC for CPU0"
+  busctl set-property ${occ_svc} ${occ_obj} ${occ_iface} ${occ_prop} b false
+
+  # Find the first available core
+  echo "Probe for target"
+  local target=""
+  local core
+  for core in {1..12}; do
+    local path="pib0/core${core}/thread0"
+    if ${pdbg} -P ${path} probe 2>/dev/null | grep -q thread0; then
+      target="${path}"
+      break
+    fi
+  done
+  if [[ -z "${target}" ]]; then
+    echo "Unable to find the first core" >&2
+    return 1
+  fi
+
+  # Send SRESET signal to the host's CPU via PDBG
+  echo "Send SRESET to ${target}"
+  ${pdbg} -P ${target} sreset
+
+  # Restore OCC for CPU0
+  busctl set-property ${occ_svc} ${occ_obj} ${occ_iface} ${occ_prop} b true
+}
+
+# Send SRESET via NMI (implementation for Nicole)
+function nmi_nicole {
+  echo "Send SRESET"
+  busctl call xyz.openbmc_project.Control.Host.NMI \
+              /xyz/openbmc_project/control/host0/nmi \
+              xyz.openbmc_project.Control.Host.NMI \
+              NMI
+}
+
+# @sudo cmd_nmi admin
+# @doc cmd_nmi
+# Send NMI signal to host to dump the hanged kernel
+#  -y, --yes       Do not ask for confirmation
+function cmd_nmi {
+  local yes=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -y | --yes) yes="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  if [[ -z "${yes}" ]]; then
+    echo "****** WARNING! ******"
+    echo "You are going to initiate kernel memory dump (kdump) on the host system."
+    echo "This action will inevitably REBOOT the host system!"
+    confirm
+  fi
+
+  if grep -q nicole /etc/os-release; then
+    nmi_nicole
+  else
+    nmi_vesnin
+  fi
+
+  echo "SRESET signal has been sent, expect kdump on the host."
+}
+
+# @doc cmd_virtualmedia
+# Virtual media operations
+#function cmd_virtualmedia {
+#  subcommand "$@"
+#}
+
+# @doc cmd_virtualmedia_mount
+# Mount a virtual media
+#  -p, --path <location> — path to image file
+#  -u, --user <username> — username to access the share
+#  -r, --readonly — mount virtual media in read-only mode
+#function cmd_virtualmedia_mount {
+#  not implemented
+#}
+
+# @doc cmd_virtualmedia_unmount
+# Unmount the virtual media
+#function cmd_virtualmedia_unmount {
+#  not implemented
+#}
+
+# @doc cmd_virtualmedia_writeprotection
+# Enable or disable virtual media write protection
+#function cmd_virtualmedia_writeprotection {
+#  not implemented
+#}
+
+# @doc cmd_virtualmedia_status
+# Check the virtual media status
+#function cmd_virtualmedia_status {
+#  not implemented
+#}
