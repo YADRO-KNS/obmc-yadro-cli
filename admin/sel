@@ -4,4 +4,20 @@
 # CLI: Decode eSEL
 #
 
-exec esel $@
+# parse command line options
+SEL_ID=
+if [[ $# -gt 0 ]]; then
+  if [[ $1 =~ --?h(elp)? ]] ; then
+    echo "eSEL parser."
+    echo "Use: $0 [ID]"
+    echo "  -h, --help    Print this help and exit"
+    exit 0
+  fi
+  SEL_ID="$1"
+fi
+
+if [[ -n "${SEL_ID}" ]]; then
+  esel --bmc "${SEL_ID}"
+else
+  esel --bmc-list
+fi
