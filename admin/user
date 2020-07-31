@@ -50,11 +50,8 @@ function set_role {
       ;;
   esac
 
-  # add user to the privilege group and set it as primary
-  if ! groups ${user} | grep -q ${group}; then
-    groupmems --add ${user} --group ${group}
-    usermod --gid ${group} ${user}
-  fi
+  # change user primary group
+  usermod --gid ${group} ${user}
 
   local iter
   for iter in ${GROUP_ADMIN} ${GROUP_OPERATOR} ${GROUP_USER}; do
@@ -85,17 +82,15 @@ function set_role {
 # Print user list.
 # All our users is sudoers, use it for iterate through the list.
 function print_list() {
-  local user role
+  local user
   for user in $(groupmems --list --group ${GROUP_SUDO} | sort); do
-    if groups ${user} | grep -q ${GROUP_ADMIN}; then
-      role="${ROLE_ADMIN}"
-    elif groups ${user} | grep -q ${GROUP_OPERATOR}; then
-      role="${ROLE_OPERATOR}"
-    elif groups ${user} | grep -q ${GROUP_USER}; then
-      role="${ROLE_USER}"
-    else
-      role="n/a"
-    fi
+    # define user role from primary group
+    local role="n/a"
+    case "$(id -gn ${user})" in
+      ${GROUP_ADMIN}) role="${ROLE_ADMIN}";;
+      ${GROUP_OPERATOR}) role="${ROLE_OPERATOR}";;
+      ${GROUP_USER}) role="${ROLE_USER}";;
+    esac
     echo "${user}: ${role}"
   done
 }
