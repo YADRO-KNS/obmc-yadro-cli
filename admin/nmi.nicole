@@ -38,12 +38,8 @@ if [[ -z "${YES}" ]]; then
 fi
 
 # send SRESET via NMI
-if ! pdbg -P pib1/chiplet0/core0/thread0 stop; then
-  echo "Unable to stop thread" >&2
-  exit 1
-fi
-if ! pdbg -P pib1/chiplet0/core0/thread0 sreset; then
-  echo "Unable to send SRESET" >&2
-  exit 1
-fi
+busctl call xyz.openbmc_project.Control.Host.NMI \
+            /xyz/openbmc_project/control/host0/nmi \
+            xyz.openbmc_project.Control.Host.NMI \
+            NMI
 echo "SRESET signal has been sent, expect kdump on the host."
