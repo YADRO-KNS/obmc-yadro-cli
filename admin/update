@@ -34,4 +34,4 @@ done
 CMD="fwupdate"
 [[ -z "${YES}" ]] || CMD+=" --yes"
 [[ -z "${CLEAR}" ]] || CMD+=" --reset"
-exec ${CMD} "${FILE}"
+exec ${CMD} -f "${FILE}"
