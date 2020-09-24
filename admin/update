@@ -4,22 +4,33 @@
 # CLI: Update BMC/BIOS firmware
 #
 
+function show_usage
+{
+    echo "Update BIOS/BMC firmware."
+    echo "Use: $0 [OPTION...] FILE"
+    echo "  -c, --clear   Reset BMC settings to manufacture defaults"
+    echo "  -y, --yes     Do not ask for confirmation"
+    echo "  -h, --help    Print this help and exit"
+}
+
 # parse command line options
 FILE=
 CLEAR=
 YES=
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h | --help)
-      echo "Update BIOS/BMC firmware."
-      echo "Use: $0 [OPTION...] FILE"
-      echo "  -c, --clear   Remove the previous BMC configuration after firmware update"
-      echo "  -y, --yes     Do not ask for confirmation"
-      echo "  -h, --help    Print this help and exit"
+      show_usage
       exit 0
       ;;
     -c | --clear) CLEAR="$1";;
     -y | --yes) YES="$1";;
+    -*)
+        echo "Invalid argument" >&2
+        show_usage
+        exit 1
+        ;;
     *)
       if [[ -n "${FILE}" ]]; then
         echo "Invalid argument, file already specified" >&2
@@ -30,6 +41,11 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
+
+if [[ -z "${FILE}" ]] && [[ -z "${CLEAR}" ]]; then
+    show_usage
+    exit 1
+fi
 
 CMD="fwupdate"
 [[ -z "${YES}" ]] || CMD+=" --yes"
