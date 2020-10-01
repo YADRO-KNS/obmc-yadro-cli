@@ -13,6 +13,8 @@ GROUP_OPERATOR="%GROUP_OPERATOR%"
 GROUP_USER="%GROUP_USER%"
 GROUP_IPMI="ipmi"
 GROUP_SUDO="sudo"
+GROUP_REDFISH="redfish"
+GROUP_WEB="web"
 
 # Lookup for group by role name
 function role_to_group {
@@ -55,17 +57,15 @@ function set_role {
 
   local group="$(role_to_group "${role}")"
 
-  # remove from all groups and set the primary one
-  usermod --gid ${group} --groups '' ${name}
-
-  # grant sudo
-  groupmems --add ${name} --group ${GROUP_SUDO}
+  # remove from all groups except sudo and set the primary one
+  usermod --gid ${group} --groups ${GROUP_SUDO} ${name}
 
   # admins have max privileges, add them to all groups and grant IPMI access
   if [[ ${role} == ${ROLE_ADMIN} ]]; then
-    groupmems --add ${name} --group ${GROUP_IPMI}
-    groupmems --add ${name} --group ${GROUP_OPERATOR}
-    groupmems --add ${name} --group ${GROUP_USER}
+    usermod \
+      --append \
+      --groups ${GROUP_IPMI},${GROUP_REDFISH},${GROUP_WEB},${GROUP_OPERATOR},${GROUP_USER} \
+      ${name}
   fi
 
   systemctl restart xyz.openbmc_project.User.Manager.service
