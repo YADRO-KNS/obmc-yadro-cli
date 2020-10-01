@@ -1,0 +1,76 @@
+#!/bin/bash -eu
+
+#
+# CLI: Host operations
+#
+
+# @doc cmd_power
+# Host power actions, capping and usage
+function cmd_power {
+  subcommand "$@"
+}
+
+# @sudo cmd_power_on admin,operator
+# @doc cmd_power_on
+# Turn the host on
+function cmd_power_on {
+  expect_noarg "$@"
+  ipmitool power on
+  echo "Chassis power is switched on, host is booting up."
+}
+
+# @sudo cmd_power_off admin,operator
+# @doc cmd_power_off
+# Turn the host off
+#  -f, --forced    Forced shutdown
+#  -y, --yes       Do not ask for confirmation
+function cmd_power_off {
+  local force=""
+  local yes=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -f | --force) force="y";;
+      -y | --yes) yes="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  if [[ -n "${force}" ]]; then
+    echo "Host will be shut down forcefully. Data loss may occur."
+  else
+    echo "Host will be turned off."
+  fi
+
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  if [[ -n "${force}" ]]; then
+    ipmitool chassis power off
+    echo "Chassis power is switched off, host is down."
+  else
+    ipmitool power off
+    echo "Shutdown signal sent to host, waiting to power the system off."
+  fi
+}
+
+# @sudo cmd_power_status admin,operator
+# @doc cmd_power_status
+# Get host power status
+function cmd_power_status {
+  expect_noarg "$@"
+  ipmitool power status
+}
+
+# @doc cmd_console
+# Open virtual console
+function cmd_console {
+  expect_noarg "$@"
+  cat << EOF
+Starting a Host console connection.
+Send <CR>~. to terminate it.
+If connected via SSH, add extra ~ characters, one per SSH connection.
+EOF
+  exec obmc-console-client
+}
