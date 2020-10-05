@@ -1,0 +1,287 @@
+#!/bin/bash -eu
+
+#
+# CLI: General BMC configuration
+#
+
+# Format date in a non-standard way
+function format_date {
+  local compact="$1"
+  local utc="$2"
+  local sec="$3"
+
+  if [[ -n "${compact}" ]] && [[ -n "${utc}" ]]; then
+    date --date "@${sec}" --utc +'%F %T UTC'
+  elif [[ -n "${compact}" ]]; then
+    date --date "@${sec}" +'%F %T UTC%z'
+  elif [[ -n "${utc}" ]]; then
+    date --date "@${sec}" --utc +'%a %d %b %Y %T UTC'
+  else
+    date --date "@${sec}" +'%a %d %b %Y %T UTC%z'
+  fi
+}
+
+# @doc cmd_info
+# General BMC information
+function cmd_info {
+  subcommand "$@"
+}
+
+# @doc cmd_info_uptime
+# Show BMC uptime
+#   -c, --compact   Show last boot time in compact format
+#   -u, --utc       Show last boot time in UTC timezone
+function cmd_info_uptime {
+  local compact=""
+  local utc=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -c | --compact) compact="y";;
+      -u | --utc) utc="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  local sec="$(awk -F. '{print $1}' /proc/uptime)"
+  local up="$(($(date +%s) - sec))"
+
+  printf 'Uptime is %dd %dh %dm %ds.\n' $((sec / 86400)) \
+                                        $((sec % 86400 / 3600)) \
+                                        $((sec % 3600 / 60)) \
+                                        $((sec % 60))
+  echo -n "Last BMC start was on "
+  format_date "${compact}" "${utc}" "${up}"
+}
+
+# @sudo cmd_info_version admin,operator,user
+# @doc cmd_info_version
+# Show version of BMC and BIOS/UEFI
+#   -b, --bmc   Show BMC version
+#   -u, --bios  Show BIOS/UEFI version
+function cmd_info_version {
+  local bmc=""
+  local bios=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -b | --bmc) bmc="y";;
+      -u | --bios) bios="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  if [[ -z "${bmc}${bios}" ]]; then
+    bmc="y"
+    bios="y"
+  fi
+
+  if [[ -n "${bmc}" ]]; then
+    fwupdate --version | grep "^BMC "
+  fi
+  if [[ -n "${bios}" ]]; then
+    fwupdate --version | grep "^Host "
+  fi
+}
+
+# @doc cmd_datetime
+# BMC date and time configuration
+function cmd_datetime {
+  subcommand "$@"
+}
+
+# @sudo cmd_datetime_set admin
+# @doc cmd_datetime_set
+# Set system time manually
+#   YYYY-MM-DD-HH-mm-SS   Time to set
+function cmd_datetime_set {
+  if [[ $# -eq 0 ]] || [[ $1 =~ ^\d{4}-\d\d-\d\d-\d\d-\d\d-\d\d$ ]]; then
+    echo "Please enter date and time in YYYY-MM-DD-HH-mm-SS format" >&2
+    return 1
+  fi
+
+  local new_date="${1:0:10}"
+  local new_time="${1:11}"
+  date "${new_date} ${new_time//-/:}"
+
+  echo "System time is updated."
+}
+
+# @doc cmd_datetime_show
+# Show system uptime
+#   -c, --compact   Show last boot time in compact format
+#   -u, --utc       Show last boot time in UTC timezone
+function cmd_datetime_show {
+  local compact=""
+  local utc=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -c | --compact) compact="y";;
+      -u | --utc) utc="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+  format_date "${compact}" "${utc}" "$(date +%s)"
+}
+
+# @sudo cmd_datetime_ntpconfig admin
+# @doc cmd_datetime_ntpconfig
+# Configure NTP server connection
+#  {add|del} IP
+function cmd_datetime_ntpconfig {
+  if [[ $# -ne 2 ]]; then
+    abort_badarg "Expected exactly 2 arguments"
+  fi
+  netconfig ntp "$1" "$2"
+}
+
+# @sudo cmd_ifconfig admin
+# @doc cmd_ifconfig
+# BMC network configuration
+function cmd_ifconfig {
+  netconfig "$@"
+}
+
+# @doc cmd_syslog
+# Syslog server configuration
+#function cmd_syslog {
+#  not implemented
+#}
+
+# @doc cmd_snmp
+# Syslog server configuration
+#function cmd_snmp {
+#  not implemented
+#}
+
+# @doc cmd_config
+# BMC config backup and restore
+function cmd_config {
+  subcommand "$@"
+}
+
+# @sudo cmd_config_backup admin
+# @doc cmd_config_backup
+# Backup the BMC configuration to a file
+#   FILE    backup file
+function cmd_config_backup {
+  if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
+    echo "File name is not specified" >&2
+    return 1
+  fi
+  backup backup "$1"
+}
+
+# @sudo cmd_config_restore admin
+# @doc cmd_config_restore
+# Restore the BMC configuration from a file
+#   FILE    backup file
+function cmd_config_restore {
+  if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
+    echo "File name is not specified" >&2
+    return 1
+  fi
+  backup restore "$1"
+}
+
+# @sudo cmd_config_default admin
+# @doc cmd_config_default
+# Restore the factory default BMC config
+#  -k, --keepipconfig   Keep network settings
+function cmd_config_default {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -k | --keepipconfig)
+        echo "Option $1 is not supported yet" >&2
+        exit 1;;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+  fwupdate --reset
+}
+
+# @doc cmd_update
+# BMC and BIOS update
+function cmd_update {
+  subcommand "$@"
+}
+
+# @sudo cmd_update_start admin
+# @doc cmd_update_start
+# Update BMC and BIOS.
+#  -c, --clearcfg  Reset BMC settings to manufacture defaults
+#  -y, --yes       Do not ask for confirmation
+#  FILE            Firmware archive to install
+function cmd_update_start {
+  local fwfile=""
+  local reset=""
+  local yes=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -c | --clearcfg) reset="--reset";;
+      -y | --yes) yes="--yes";;
+      *)
+        if [[ -n "${fwfile}" ]]; then
+          abort_badarg "$1"
+        else
+          fwfile="$1"
+        fi
+        ;;
+    esac
+    shift
+  done
+
+  if [[ -z "${fwfile}" ]]; then
+    echo "Firmware file not specified" >&2
+    return 1
+  fi
+
+  fwupdate ${reset} ${yes} -f "${fwfile}"
+}
+
+# @doc cmd_update_status
+# Returns the status of the firmware update process
+#function cmd_update_status {
+#  not implemented
+#}
+
+# @doc cmd_update_rollback
+# Rollback to the standby firmware
+#function cmd_update_rollback {
+#  not implemented
+#}
+
+# @sudo cmd_reboot admin
+# @doc cmd_reboot
+# Reboot the BMC
+#  -f, --force     Forced BMC reboot
+#  -y, --yes       Do not ask for confirmation
+function cmd_reboot {
+  local force=""
+  local yes=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -f | --force) force="y";;
+      -y | --yes) yes="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  if [[ -n "${force}" ]]; then
+    echo -n "BMC will be rebooted gracefully,"
+  else
+    echo -n "BMC will be rebooted forcefully,"
+  fi
+  echo " all user sessions including this one will be"
+  echo "closed. Host will not be affected."
+
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  echo "Reboot the BMC..."
+  reboot ${force}
+}
