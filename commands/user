@@ -12,11 +12,17 @@ GROUP_ADMIN="%GROUP_ADMIN%"
 GROUP_OPERATOR="%GROUP_OPERATOR%"
 GROUP_USER="%GROUP_USER%"
 GROUP_IPMI="ipmi"
-GROUP_SUDO="sudo"
 GROUP_REDFISH="redfish"
 GROUP_WEB="web"
+GROUP_SSH="ssh"
 
-# Lookup for group by role name
+# D-Bus entities to manage user accounts
+DBUS_SERVICE="xyz.openbmc_project.User.Manager"
+DBUS_ROOT_PATH="/xyz/openbmc_project/user"
+DBUS_ATTRIBUTES="xyz.openbmc_project.User.Attributes"
+DBUS_DELETE="xyz.openbmc_project.Object.Delete"
+
+# Lookup for group by role name (privilege in BMC terms)
 function role_to_group {
   case "$1" in
     ${ROLE_ADMIN})    echo "${GROUP_ADMIN}";;
@@ -29,7 +35,7 @@ function role_to_group {
   esac
 }
 
-# Lookup for role by group name
+# Lookup for role (privilege in BMC terms) by group name
 function group_to_role {
   case "$1" in
     ${GROUP_ADMIN})    echo "${ROLE_ADMIN}";;
@@ -40,35 +46,6 @@ function group_to_role {
       return 1
       ;;
   esac
-}
-
-# Check if user account can be managed by a local admin
-function check_user {
-  if ! id -nG "$1" 2>/dev/null | grep -q "\b${GROUP_SUDO}\b"; then
-    echo "Invalid user: $1" >&2
-    return 1
-  fi
-}
-
-# Set role for specified account
-function set_role {
-  local name="$1"
-  local role="$2"
-
-  local group="$(role_to_group "${role}")"
-
-  # remove from all groups except sudo and set the primary one
-  usermod --gid ${group} --groups ${GROUP_SUDO} ${name}
-
-  # admins have max privileges, add them to all groups and grant IPMI access
-  if [[ ${role} == ${ROLE_ADMIN} ]]; then
-    usermod \
-      --append \
-      --groups ${GROUP_IPMI},${GROUP_REDFISH},${GROUP_WEB},${GROUP_OPERATOR},${GROUP_USER} \
-      ${name}
-  fi
-
-  systemctl restart xyz.openbmc_project.User.Manager.service
 }
 
 # @sudo cmd_create admin
@@ -100,18 +77,15 @@ function cmd_create {
     return 1
   fi
 
-  local group="$(role_to_group "${role}")"
-  useradd --gid ${group} ${name}
-  set_role ${name} ${role}
-
+  local priv="$(role_to_group "${role}")"
+  busctl call ${DBUS_SERVICE} ${DBUS_ROOT_PATH} \
+              ${DBUS_SERVICE} CreateUser sassb \
+              "${name}" \
+              4 ${GROUP_IPMI} ${GROUP_REDFISH} ${GROUP_WEB} ${GROUP_SSH} \
+              "${priv}" \
+              true
   echo "User ${name} created."
 }
-
-# @doc cmd_create-ldap
-# Create a new LDAP user
-#function cmd_create-ldap {
-#  not implemented
-#}
 
 # @sudo cmd_show admin
 # @doc cmd_show
@@ -120,35 +94,29 @@ function cmd_create {
 function cmd_show {
   while [[ $# -gt 0 ]]; do
     local user="$1"
-    local role="$(group_to_role "$(id -g -n "${user}")")"
-    echo "${user}: ${role}"
     shift
+    local grp="$(busctl get-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${user}" \
+                                     ${DBUS_ATTRIBUTES} "UserPrivilege" \
+                                     2>/dev/null \
+                                     | awk '{gsub(/"/, "", $NF); print $NF}')"
+    if [[ -z "${grp}" ]]; then
+      echo "Invalid user: ${user}" >&2
+      return 1
+    fi
+    local role="$(group_to_role ${grp})"
+    echo "${user}: ${role}"
   done
 }
 
 # @sudo cmd_list admin
 # @doc cmd_list
 # Show list of users
-#   -r, --role ROLE  Shows list of all users with the specific role
 function cmd_list {
-  if [[ $# -eq 2 ]] && [[ $1 =~ --?r(ole)? ]]; then
-    local group="$(group_to_role "$1")"
-  else
-    # all and only custom users are members of "sudo" group
-    local group="${GROUP_SUDO}"
-  fi
-
-  local user
-  for user in $(groupmems --list --group ${group} | sort); do
-    cmd_show "${user}"
+  local path
+  for path in $(busctl --list tree ${DBUS_SERVICE} | grep ${DBUS_ROOT_PATH}/); do
+    cmd_show "${path##*/}"
   done
 }
-
-# @doc cmd_show-ldap
-# Show LDAP users
-#function cmd_show-ldap {
-#  not implemented
-#}
 
 # @sudo cmd_delete admin
 # @doc cmd_delete
@@ -159,12 +127,12 @@ function cmd_delete {
     echo "User name is not specified" >&2
     return 1
   fi
-
   local name="$1"
-  check_user "${name}"
-  usermod --groups '' ${name}
-  deluser --remove-home ${name}
-  systemctl restart xyz.openbmc_project.User.Manager.service
+  if ! busctl call ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
+                   ${DBUS_DELETE} Delete 2>/dev/null; then
+    echo "Error deleting user: ${name}" >&2
+    return 1
+  fi
   echo "User ${name} removed."
 }
 
@@ -183,8 +151,12 @@ function cmd_set_password {
     echo "User name is not specified" >&2
     return 1
   fi
-  check_user "$1"
-  passwd "$1"
+  local name="$1"
+  if [[ $(id -u "${name}") -lt 1000 ]]; then
+    echo "Invalid user: ${name}" >&2
+    return 1
+  fi
+  passwd "${name}"
 }
 
 # @sudo cmd_set_role admin
@@ -212,13 +184,20 @@ function cmd_set_role {
     shift
   done
 
-  check_user "${name}"
-  set_role "${name}" "${role}"
+  if [[ -z "${name}" ]]; then
+    echo "User name not specified" >&2
+    return 1
+  fi
+  if [[ -z "${role}" ]]; then
+    echo "Role name not specified" >&2
+    return 1
+  fi
+
+  local priv
+  priv="$(role_to_group "${role}")"
+
+  busctl set-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
+                      ${DBUS_ATTRIBUTES} "UserPrivilege" s ${priv}
+
   echo "User ${name} now has ${role} privileges."
 }
-
-# @doc cmd_sessions
-# Manage user sessions
-#function cmd_sessions {
-#  not implemented
-#}
