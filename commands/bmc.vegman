@@ -143,46 +143,10 @@ function cmd_ifconfig {
   netconfig "$@"
 }
 
-# @doc cmd_syslog
-# Syslog server configuration
-#function cmd_syslog {
-#  not implemented
-#}
-
-# @doc cmd_snmp
-# Syslog server configuration
-#function cmd_snmp {
-#  not implemented
-#}
-
 # @doc cmd_config
 # BMC config backup and restore
 function cmd_config {
   subcommand "$@"
-}
-
-# @sudo cmd_config_backup admin
-# @doc cmd_config_backup
-# Backup the BMC configuration to a file
-#   FILE    backup file
-function cmd_config_backup {
-  if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
-    echo "File name is not specified" >&2
-    return 1
-  fi
-  backup backup "$1"
-}
-
-# @sudo cmd_config_restore admin
-# @doc cmd_config_restore
-# Restore the BMC configuration from a file
-#   FILE    backup file
-function cmd_config_restore {
-  if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
-    echo "File name is not specified" >&2
-    return 1
-  fi
-  backup restore "$1"
 }
 
 # @sudo cmd_config_default admin
@@ -240,18 +204,6 @@ function cmd_update_start {
 
   fwupdate ${reset} ${yes} -f "${fwfile}"
 }
-
-# @doc cmd_update_status
-# Returns the status of the firmware update process
-#function cmd_update_status {
-#  not implemented
-#}
-
-# @doc cmd_update_rollback
-# Rollback to the standby firmware
-#function cmd_update_rollback {
-#  not implemented
-#}
 
 # @sudo cmd_reboot admin
 # @doc cmd_reboot
