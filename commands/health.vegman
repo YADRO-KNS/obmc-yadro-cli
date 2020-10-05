@@ -4,6 +4,20 @@
 # CLI: System health information
 #
 
+# @sudo cmd_inventory admin,operator
+# @doc cmd_inventory
+# System inventory
+function cmd_inventory {
+  ipmitool fru
+}
+
+# @sudo cmd_sensors admin,operator
+# @doc cmd_sensors
+# Sensor readings
+function cmd_sensors {
+  ipmitool sensor list
+}
+
 # @doc cmd_logs
 # Operations with logs
 function cmd_logs {
