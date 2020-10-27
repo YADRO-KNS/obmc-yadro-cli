@@ -15,7 +15,7 @@ function cmd_inventory {
 # @doc cmd_sensors
 # Sensor readings
 function cmd_sensors {
-  ipmitool sensor list
+  lssensors "$@"
 }
 
 # @doc cmd_logs
