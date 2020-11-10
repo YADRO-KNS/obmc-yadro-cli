@@ -4,6 +4,11 @@
 # CLI: General BMC configuration
 #
 
+SETTINGS_SERVICE="xyz.openbmc_project.Settings"
+TIMESYNC_METHOD_PATH="/xyz/openbmc_project/time/sync_method"
+TIMESYNC_METHOD_IFACE="xyz.openbmc_project.Time.Synchronization"
+TIMESYNC_METHOD_PROPERTY="TimeSyncMethod"
+
 # Format date in a non-standard way
 function format_date {
   local compact="$1"
@@ -88,6 +93,48 @@ function cmd_info_version {
 # BMC date and time configuration
 function cmd_datetime {
   subcommand "$@"
+}
+
+# @sudo cmd_datetime_method admin
+# @doc cmd_datetime_method
+# Change time synchronization method
+#  {manual|ntp}
+function cmd_datetime_method {
+  local method="$(busctl get-property ${SETTINGS_SERVICE} \
+                                      ${TIMESYNC_METHOD_PATH} \
+                                      ${TIMESYNC_METHOD_IFACE} \
+                                      ${TIMESYNC_METHOD_PROPERTY})"
+  method=${method##*.}
+  method=${method%\"*}
+
+  if [[ $# -eq 0 ]]; then
+      echo "Current time synchronization method is ${method}"
+  else
+    case "${1}" in
+      [Mm][Aa][Nn][Uu][Aa][Ll])
+        if [[ ${method} != "Manual" ]]; then
+          busctl set-property --timeout=60 ${SETTINGS_SERVICE} \
+                              ${TIMESYNC_METHOD_PATH} \
+                              ${TIMESYNC_METHOD_IFACE} \
+                              ${TIMESYNC_METHOD_PROPERTY} s \
+                              ${TIMESYNC_METHOD_IFACE}.Method.Manual
+        fi
+        ;;
+
+      [Nn][Tt][Pp])
+        if [[ ${method} != "NTP" ]]; then
+          busctl set-property --timeout=60 ${SETTINGS_SERVICE} \
+                              ${TIMESYNC_METHOD_PATH} \
+                              ${TIMESYNC_METHOD_IFACE} \
+                              ${TIMESYNC_METHOD_PROPERTY} s \
+                              ${TIMESYNC_METHOD_IFACE}.Method.NTP
+        fi
+        ;;
+      *)
+        abort_badarg "Unsupported method specified. Expected manual or ntp."
+        ;;
+    esac
+  fi
 }
 
 # @sudo cmd_datetime_set admin
