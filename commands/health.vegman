@@ -38,7 +38,7 @@ function cmd_logs_show {
 function cmd_logs_export {
   expect_noarg "$@"
   local file="/tmp/bmc_$(date +'%Y%m%d_%H%M%S').log"
-  journalctl --no-hostname --no-pager --verbose > "${file}"
+  journalctl --no-hostname --no-pager --output verbose > "${file}"
   echo "Logs are exported to the file ${file}."
 }
 
