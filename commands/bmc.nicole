@@ -180,7 +180,7 @@ function cmd_datetime_ntpconfig {
   if [[ $# -ne 2 ]]; then
     abort_badarg "Expected exactly 2 arguments"
   fi
-  netconfig ntp "$1" "$2"
+  netconfig ntp "eth0" "$1" "$2"
 }
 
 # @sudo cmd_ifconfig admin

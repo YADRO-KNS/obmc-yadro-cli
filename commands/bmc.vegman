@@ -175,12 +175,12 @@ function cmd_datetime_show {
 # @sudo cmd_datetime_ntpconfig admin
 # @doc cmd_datetime_ntpconfig
 # Configure NTP server connection
-#  {add|del} IP
+#  {interface} {add|del} IP
 function cmd_datetime_ntpconfig {
-  if [[ $# -ne 2 ]]; then
-    abort_badarg "Expected exactly 2 arguments"
+  if [[ $# -ne 3 ]]; then
+    abort_badarg "Expected exactly 3 arguments"
   fi
-  netconfig ntp "$1" "$2"
+  netconfig ntp "$1" "$2" "$3"
 }
 
 # @sudo cmd_ifconfig admin
