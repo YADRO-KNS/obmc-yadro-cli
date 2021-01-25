@@ -11,10 +11,12 @@ MACHINE="nicole"
 ROLE_ADMIN="admin"
 ROLE_OPERATOR="operator"
 ROLE_USER="user"
+ROLE_TECH="tech"
 
 GROUP_ADMIN="priv-admin"
 GROUP_OPERATOR="priv-operator"
 GROUP_USER="priv-user"
+GROUP_TECH="tech"
 
 BIN_DIR="/usr/bin"
 SHARE_DIR="/usr/share/cli"
@@ -103,6 +105,7 @@ install_cli_script() {
         ${ROLE_ADMIN})    group="${GROUP_ADMIN}";;
         ${ROLE_OPERATOR}) group="${GROUP_OPERATOR}";;
         ${ROLE_USER})     group="${GROUP_USER}";;
+        ${ROLE_TECH})     group="${GROUP_TECH}";;
         *)
           echo "ERROR: Unknown role ${role} in file ${src_file}, command ${cmd}" >&2
           exit 1;;

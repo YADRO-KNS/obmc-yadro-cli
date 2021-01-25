@@ -1,0 +1,161 @@
+#!/bin/bash -eu
+
+#
+# CLI: Service operations
+#
+
+# D-Bus object descriptions
+FRU_SYSTEMD_SERVICE="xyz.openbmc_project.FruDevice.service"
+FRU_DAEMON="fru-device"
+FRU_DBUS_SERVICE="xyz.openbmc_project.FruDevice"
+FRU_DBUS_OBJECT_TEMPLATE="\/xyz.*_Motherboard"
+FRU_DBUS_INTERFACE="xyz.openbmc_project.FruDevice"
+fru_dbus_object=""
+
+# FRU fields
+fru_chassis_pnum=""
+fru_product_pnum=""
+fru_product_name=""
+fru_product_serial=""
+fru_asset_tag=""
+fru_mac1=""
+fru_mac2=""
+
+function parse_data {
+  local fru="$1"
+  local csum="$2"
+  if [ -z "${fru}" ] || [ -z "${csum}" ]; then
+    echo "No data or checksum provided" >&2
+    return 1
+  fi
+
+  local csum_calc
+  csum_calc=$(echo -n "${fru}" | md5sum | cut -f1 -d ' ')
+  if [ "x${csum}" !=  "x${csum_calc}" ]; then
+    echo "Check sum verification failed" >&2
+    return 1
+  fi
+
+  if ! fru="$(echo "${fru}" | jq -cM '.')" || [ -z "${fru}" ]; then
+    echo "Failed to parse FRU JSON" >&2
+    return 1
+  fi
+
+  if ! fru_chassis_pnum="$(echo "${fru}" | jq -ecMr '.chassis.pn')" || [ -z "${fru_chassis_pnum}" ]; then
+    echo "No Chassis Product Number" >&2
+    return 1
+  fi
+  if ! fru_product_pnum="$(echo "${fru}" | jq -ecMr '.product.pn')" || [ -z "${fru_product_pnum}" ]; then
+    echo "No Product Number" >&2
+    return 1
+  fi
+  if ! fru_product_name="$(echo "${fru}" | jq -ecMr '.product.pname')" || [ -z "${fru_product_name}" ]; then
+    echo "No Product Name" >&2
+    return 1
+  fi
+  if ! fru_product_serial="$(echo "${fru}" | jq -ecMr '.product.serial')" || [ -z "${fru_product_serial}" ]; then
+    echo "No Product Serial Number" >&2
+    return 1
+  fi
+  return 0
+}
+
+function set_fru_field {
+  local prop="$1"
+  local value="$2"
+  if ! busctl set-property ${FRU_DBUS_SERVICE} \
+                        "${fru_dbus_object}" \
+                        ${FRU_DBUS_INTERFACE} "${prop}" s "${value}"; then
+    echo "Failed to set property ${prop}" >&2
+    return 1
+  fi
+  # FruDevice writes EEPROM and rescan bus after each update, let it to do this work
+  sleep 5
+  return 0
+}
+
+# @sudo cmd_fru tech
+# @doc cmd_fru
+# Update FRU fields
+#  --fru <json>   New FRU data in JSON format
+#  --csum <md5>   MD5 check sum for input JSON
+function cmd_fru {
+  local fru=""
+  local checksum=""
+
+  #Only allow run from serial console
+  if ! cur_tty="$(tty)" || [ "x${cur_tty}" != "x/dev/ttyS4" ]; then
+    echo "Allowed to run from serial console only" >&2
+    return 1
+  fi
+
+  if [[ $# -le 0 ]]; then
+    print_help cmd_fru
+    return 1
+  fi
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --fru)
+            shift
+            if [[ $# -le 0 ]]; then
+                echo "Argument expected" >&2
+                return 1
+            fi
+            fru="$1"
+            ;;
+      --csum)
+            shift
+            if [[ $# -le 0 ]]; then
+                echo "Argument expected" >&2
+                return 1
+            fi
+            checksum="$1"
+            ;;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  echo "Checking input..."
+  parse_data "${fru}" "${checksum}" || return 1
+
+  echo "Preparing FRU manager..."
+  if ! systemctl stop "${FRU_SYSTEMD_SERVICE}" 2>/dev/null; then
+    echo "Failed to stop FruDevice" >&2
+    return 1
+  fi
+  ${FRU_DAEMON} -w 2>&1 | logger -t ${FRU_DAEMON} &
+
+  n=1
+  while true; do
+    fru_dbus_object=$(busctl tree ${FRU_DBUS_SERVICE} 2>/dev/null |
+        sed -n "s/^.*\(${FRU_DBUS_OBJECT_TEMPLATE}\).*$/\1/p"
+      ) && [ -n "${fru_dbus_object}" ] && break
+    if [ ${n} -lt 15 ]; then
+        n=$((n+1))
+        sleep 1
+    else
+        echo "Failed to find baseboard FRU object" >&2
+        return 1
+    fi
+  done
+
+  echo "Parameters to be set in FRU:"
+  echo "    CHASSIS_PART_NUMBER:   ${fru_chassis_pnum}"
+  echo "    PRODUCT_PART_NUMBER:   ${fru_product_pnum}"
+  echo "    PRODUCT_PRODUCT_NAME:  ${fru_product_name}"
+  echo "    PRODUCT_SERIAL_NUMBER: ${fru_product_serial}"
+  if confirm; then
+    set_fru_field "CHASSIS_PART_NUMBER" "${fru_chassis_pnum}" || return 1
+    set_fru_field "PRODUCT_PART_NUMBER" "${fru_product_pnum}" || return 1
+    set_fru_field "PRODUCT_PRODUCT_NAME" "${fru_product_name}" || return 1
+    set_fru_field "PRODUCT_SERIAL_NUMBER" "${fru_product_serial}" || return 1
+    echo "FRU updated"
+  fi
+
+  killall ${FRU_DAEMON} || echo "Failed to kill FruDevice" >&2
+  if ! systemctl start "${FRU_SYSTEMD_SERVICE}" 2>/dev/null; then
+    echo "Failed to start FruDevice" >&2
+    return 1
+  fi
+}
