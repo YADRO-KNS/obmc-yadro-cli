@@ -22,6 +22,8 @@ DBUS_ROOT_PATH="/xyz/openbmc_project/user"
 DBUS_ATTRIBUTES="xyz.openbmc_project.User.Attributes"
 DBUS_DELETE="xyz.openbmc_project.Object.Delete"
 
+USERNAME_REGEX="^[\.a-zA-Z0-9_-]+$"
+
 # Lookup for group by role name (privilege in BMC terms)
 function role_to_group {
   case "$1" in
@@ -72,7 +74,7 @@ function cmd_create {
     esac
     shift
   done
-  if [[ ! ${name} =~ ^[\.a-zA-Z0-9_-]+$ ]]; then
+  if [[ ! ${name} =~ ${USERNAME_REGEX} ]]; then
     echo "Invalid user name: ${name}" >&2
     return 1
   fi
@@ -120,20 +122,49 @@ function cmd_list {
 
 # @sudo cmd_delete admin
 # @doc cmd_delete
-# Delete user
-#   USERNAME    User account name
+# Delete users
+#   -y, --yes       Do not ask for confirmation
+#   USERNAME...     User account name (multiple names can be added).
 function cmd_delete {
-  if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
+  local yes=""
+  local names=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -y | --yes) yes="y";;
+      *)
+        if [[ $1 =~ ${USERNAME_REGEX} ]]; then
+          names+=( $1 )
+        else
+          abort_badarg "$1"
+        fi
+        ;;
+    esac
+    shift
+  done
+
+  if [[ ${#names[@]} -lt 1 ]]; then
     echo "User name is not specified" >&2
     return 1
   fi
-  local name="$1"
-  if ! busctl call ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
-                   ${DBUS_DELETE} Delete 2>/dev/null; then
-    echo "Error deleting user: ${name}" >&2
-    return 1
+
+  if [[ -z "${yes}" ]]; then
+    if [[ ${#names[@]} -eq 1 ]]; then
+      echo "User '${names[0]}' will be removed permanently."
+    else
+      echo "${#names[@]} users will be removed permanently."
+    fi
+    confirm
   fi
-  echo "User ${name} removed."
+
+  for name in ${names[@]}; do
+    if ! busctl call ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
+                     ${DBUS_DELETE} Delete 2>/dev/null; then
+      echo "Error deleting user: ${name}" >&2
+      return 1
+    fi
+    echo "User ${name} removed."
+  done
 }
 
 # @doc cmd_set
