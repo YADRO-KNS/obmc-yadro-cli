@@ -63,6 +63,71 @@ function cmd_power_status {
   ipmitool power status
 }
 
+# @doc cmd_virtualmedia
+# Access Virtual Media
+function cmd_virtualmedia {
+  subcommand "$@"
+}
+
+# @sudo cmd_virtualmedia_mount admin
+# @doc cmd_virtualmedia_mount
+# Mount a virtual media
+#  --usb    - the USB interface type
+#  --usb-ro - the USB interface type (read-only)
+#  --hdd    - the HDD interface type
+#  --cdrom  - the CD/DVD/BD-ROM interface type (read-only), based on file size
+#  FILE — path to image file
+function cmd_virtualmedia_mount {
+  local imagefile=""
+  local type=""
+
+  while [[ $# -gt 0 ]]; do
+    case "${1}" in
+      --usb) type="usb";;
+      --usb-ro) type="usb-ro";;
+      --hdd) type="hdd";;
+      --cdrom) type="cdrom";;
+      *)
+        if [[ -n "${imagefile}" ]]; then
+          abort_badarg "${1}"
+        else
+          imagefile="${1}"
+        fi
+        ;;
+    esac
+    shift
+  done
+
+  if [[ ! -e ${imagefile} ]] || [[ -d ${imagefile} ]]; then
+    echo "Please specify the path to image file" >&2
+    return 1
+  fi
+
+  usb-ctrl insert "usb.ms.cli" "${imagefile}" "${type}"
+}
+
+# @sudo cmd_virtualmedia_umount admin
+# @doc cmd_virtualmedia_umount
+# Unmount the virtual media
+#  -y, --yes  - does not ask for interactive confirmation
+function cmd_virtualmedia_umount {
+  local yes=""
+
+  while [[ $# -gt 0 ]]; do
+    case "${1}" in
+      -y | --yes) yes="y";;
+      *) abort_badarg "${1}";;
+    esac
+    shift
+  done
+
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  usb-ctrl eject "usb.ms.cli"
+}
+
 # @doc cmd_console
 # Open virtual console
 function cmd_console {
