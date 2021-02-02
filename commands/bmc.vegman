@@ -353,3 +353,88 @@ function cmd_reboot {
   echo "Reboot the BMC..."
   reboot ${force}
 }
+
+# @doc cmd_remoteimage
+# Access to the remote side file
+function cmd_remoteimage {
+  subcommand "$@"
+}
+
+# @sudo cmd_remoteimage_connect admin
+# @doc cmd_remoteimage_connect
+# Connect to the remote server via the specified protocol
+#   --nbd <0..10>     use NBD protocol to connect the remote server with specified NBD device number
+#   address[:port]    remote server address
+function cmd_remoteimage_connect {
+    local nbd_device=""
+    local remote_point=""
+    local address=""
+    local port=""
+
+    while [[ $# -gt 0 ]]; do
+      case "${1}" in
+        --nbd)
+          if [[ $# -lt 2 ]]; then
+            echo "The NBD device number shall be specified" >&2
+            return 1
+          fi
+          nbd_device="/dev/nbd${2}"
+          shift
+          ;;
+        *)
+          if [[ -n "${remote_point}" ]]; then
+            abort_badarg "${1}"
+          else
+            remote_point="${1}"
+          fi
+          address="${remote_point%:*}"
+          port="${remote_point#*:}"
+          ;;
+      esac
+      shift
+    done
+
+    if [[ -z "${port}" ]]; then
+        port=10809
+    fi
+
+    if [[ -z "${address}" ]] || [[ -z "${port}" ]]; then
+      echo "The remote server address shall be specified." >&2
+      return 1
+    fi
+
+    echo "Connecting to NBD server ${remote_point}..."
+    nbd-client "${address}" "${port}" "${nbd_device}"
+}
+
+# @sudo cmd_remoteimage_disconnect admin
+# @doc cmd_remoteimage_disconnect
+# Dissconnect NBD session
+#   -y, --yes       do not ask for confirmation
+#   --nbd <0..10>   the number of NBD device
+function cmd_remoteimage_disconnect {
+  local yes=""
+  local nbd_device=""
+
+  while [[ $# -gt 0 ]]; do
+    case "${1}" in
+      -y | --yes) yes="y";;
+      --nbd)
+        if [[ $# -lt 2 ]] || [[ ${2:0:1} == "-" ]]; then
+          echo "The NBD device number shall be specified" >&2
+          return 1
+        fi
+        nbd_device="/dev/nbd${2}"
+        shift
+        ;;
+      *) abort_badarg "${1}";;
+    esac
+    shift
+  done
+
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  nbd-client -d "${nbd_device}"
+}
