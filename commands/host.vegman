@@ -98,6 +98,11 @@ function cmd_virtualmedia_mount {
     shift
   done
 
+ if [[ -z "${type}" ]]; then
+    echo "Please specify the Virtual Media interface type" >&2
+    return 1
+  fi
+
   if [[ ! -e ${imagefile} ]] || [[ -d ${imagefile} ]]; then
     echo "Please specify the path to image file" >&2
     return 1

@@ -363,22 +363,32 @@ function cmd_remoteimage {
 # @sudo cmd_remoteimage_connect admin
 # @doc cmd_remoteimage_connect
 # Connect to the remote server via the specified protocol
-#   --nbd <0..10>     use NBD protocol to connect the remote server with specified NBD device number
-#   address[:port]    remote server address
+#   --nbd <0..10>         use NBD protocol to connect the remote server with specified NBD device number
+#   -e,--export <name>    the name of the export
+#   address[:port]        remote server address
 function cmd_remoteimage_connect {
     local nbd_device=""
     local remote_point=""
     local address=""
     local port=""
+    local export_name=""
 
     while [[ $# -gt 0 ]]; do
       case "${1}" in
         --nbd)
           if [[ $# -lt 2 ]]; then
-            echo "The NBD device number shall be specified" >&2
+            echo "The ordinal number of the NBD device is required." >&2
             return 1
           fi
           nbd_device="/dev/nbd${2}"
+          shift
+          ;;
+        -e | --export)
+          if [[ $# -lt 2 ]]; then
+            echo "The export name of the NBD device is required" >&2
+            return 1
+          fi
+          export_name="--name ${2} "
           shift
           ;;
         *)
@@ -394,6 +404,11 @@ function cmd_remoteimage_connect {
       shift
     done
 
+    if [[ -z "${nbd_device}" ]]; then
+      echo "The NBD device number shall be specified." >&2
+      return 1
+    fi
+
     if [[ -z "${port}" ]]; then
         port=10809
     fi
@@ -404,12 +419,12 @@ function cmd_remoteimage_connect {
     fi
 
     echo "Connecting to NBD server ${remote_point}..."
-    nbd-client "${address}" "${port}" "${nbd_device}"
+    nbd-client ${export_name} "${address}" "${port}" "${nbd_device}"
 }
 
 # @sudo cmd_remoteimage_disconnect admin
 # @doc cmd_remoteimage_disconnect
-# Dissconnect NBD session
+# Disconnect NBD session
 #   -y, --yes       do not ask for confirmation
 #   --nbd <0..10>   the number of NBD device
 function cmd_remoteimage_disconnect {
@@ -431,6 +446,11 @@ function cmd_remoteimage_disconnect {
     esac
     shift
   done
+
+  if [[ -z "${nbd_device}" ]]; then
+    echo "The NBD device number shall be specified." >&2
+    return 1
+  fi
 
   if [[ -z "${yes}" ]]; then
     confirm
