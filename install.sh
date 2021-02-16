@@ -127,6 +127,8 @@ echo "Install Phosphor CLI environment to ${INSTALL_ROOT}"
 
 install -DT --mode 0555 "${THIS_DIR}/clicmd" "${INSTALL_ROOT}/usr/bin/clicmd"
 install -DT --mode 0644 "${THIS_DIR}/profile.in" "${INSTALL_ROOT}${DEFAULT_PROFILE}"
+install -DT --mode 0644 "${THIS_DIR}/functions" \
+    "${INSTALL_ROOT}${SHARE_DIR}/.include/functions"
 
 for SRC_FILE in "${THIS_DIR}/commands"/*; do
   # filter out by target machine
