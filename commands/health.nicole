@@ -64,12 +64,21 @@ function cmd_logs_export {
 
   local path="/run/dreport"
   local prefix="obmcdump_"
-  local ext=".tar.gz"
+  local ext=".tar.xz"
   local timestamp="$(date +%Y%m%d%H%M%S)"
 
+  mkdir -p ${path}
+  chmod 0777 ${path}
   dreport -v -n "${prefix}${timestamp}" -d "${path}"
 
-  echo "Logs are exported to the file '${path}/${prefix}${timestamp}${ext}'"
+  local filename="${path}/${prefix}${timestamp}${ext}"
+  [[ -z "${SUDO_USER:-}" ]] || chown ${SUDO_USER} ${filename}
+
+  echo "Logs are exported to the file '${filename}'"
+
+  find ${path} -type f -name ${prefix}\*${ext} \
+       -mmin +1 -user ${SUDO_USER:-${USER}} \
+       -exec rm -f \{\} \;
 }
 
 # @sudo cmd_logs_clear admin
