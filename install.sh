@@ -123,7 +123,7 @@ install_cli_script() {
   unset sudo_file link_file real_file cmd_desc cmd_name src_file
 }
 
-echo "Install Phosphor CLI environment to ${INSTALL_ROOT}"
+echo "Installing Phosphor CLI environment to '${INSTALL_ROOT}' for '${MACHINE}':"
 
 install -DT --mode 0555 "${THIS_DIR}/clicmd" "${INSTALL_ROOT}/usr/bin/clicmd"
 install -DT --mode 0644 "${THIS_DIR}/profile.in" "${INSTALL_ROOT}${DEFAULT_PROFILE}"
@@ -133,10 +133,11 @@ install -DT --mode 0644 "${THIS_DIR}/functions" \
 for SRC_FILE in "${THIS_DIR}/commands"/*; do
   # filter out by target machine
   SRC_TARGET="$(basename "${SRC_FILE}" | sed -r 's/.+\.(.+)|.*/\1/')"
+  printf "Script %-25s" "'$(basename "${SRC_FILE}")'"
   if [ -n "${SRC_TARGET}" -a "${SRC_TARGET}" != "${MACHINE}" ]; then
-    echo "Skip '$(basename "${SRC_FILE}")' (${SRC_TARGET}!=${MACHINE})"
+    echo "[SKIP]"
   else
-    echo "Install '$(basename "${SRC_FILE}")' command script"
+    echo "[INSTALL]"
     install_cli_script "${SRC_FILE}"
   fi
 done
