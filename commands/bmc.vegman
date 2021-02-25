@@ -64,6 +64,7 @@ function cmd_info_uptime {
 }
 
 # @sudo cmd_info_version admin,operator,user
+# @restrict cmd_info_version admin,operator,user
 # @doc cmd_info_version
 # Show version of BMC and BIOS/UEFI
 #   -b, --bmc   Show BMC version
@@ -100,6 +101,7 @@ function cmd_datetime {
 }
 
 # @sudo cmd_datetime_method admin
+# @restrict cmd_datetime_method admin
 # @doc cmd_datetime_method
 # Change time synchronization method
 #  {manual|ntp}
@@ -142,6 +144,7 @@ function cmd_datetime_method {
 }
 
 # @sudo cmd_datetime_set admin
+# @restrict cmd_datetime_set admin
 # @doc cmd_datetime_set
 # Set system time manually
 #   YYYY-MM-DD-HH-mm-SS   Time to set
@@ -177,6 +180,7 @@ function cmd_datetime_show {
 }
 
 # @sudo cmd_datetime_ntpconfig admin
+# @restrict cmd_datetime_ntpconfig admin
 # @doc cmd_datetime_ntpconfig
 # Configure NTP server connection
 #  {interface} {add|del} IP
@@ -188,6 +192,7 @@ function cmd_datetime_ntpconfig {
 }
 
 # @sudo cmd_ifconfig admin
+# @restrict cmd_ifconfig admin
 # @doc cmd_ifconfig
 # BMC network configuration
 function cmd_ifconfig {
@@ -201,6 +206,7 @@ function cmd_syslog {
 }
 
 # @sudo cmd_syslog_show admin,operator,user
+# @restrict cmd_syslog_show admin,operator,user
 # @doc cmd_syslog_show
 # Show actual remote syslog server
 function cmd_syslog_show {
@@ -230,6 +236,7 @@ function cmd_syslog_show {
 }
 
 # @sudo cmd_syslog_set admin
+# @restrict cmd_syslog_set admin
 # @doc cmd_syslog_set
 # Configure remote syslog server
 #  address[:port] - to change settings
@@ -253,6 +260,7 @@ function cmd_syslog_set {
 }
 
 # @sudo cmd_syslog_reset admin
+# @restrict cmd_syslog_reset admin
 # @doc cmd_syslog_reset
 # Reset syslog settins. Alias for the syslog set command without arguments.
 function cmd_syslog_reset {
@@ -266,6 +274,7 @@ function cmd_config {
 }
 
 # @sudo cmd_config_default admin
+# @restrict cmd_config_default admin
 # @doc cmd_config_default
 # Restore the factory default BMC config
 #  -k, --keepipconfig   Keep network settings
@@ -289,6 +298,7 @@ function cmd_update {
 }
 
 # @sudo cmd_update_start admin
+# @restrict cmd_update_start admin
 # @doc cmd_update_start
 # Update BMC and BIOS.
 #  -c, --clearcfg  Reset BMC settings to manufacture defaults
@@ -322,6 +332,7 @@ function cmd_update_start {
 }
 
 # @sudo cmd_reboot admin
+# @restrict cmd_reboot admin
 # @doc cmd_reboot
 # Reboot the BMC
 #  -f, --force     Forced BMC reboot
@@ -361,6 +372,7 @@ function cmd_remoteimage {
 }
 
 # @sudo cmd_remoteimage_connect admin
+# @restrict cmd_remoteimage_connect admin
 # @doc cmd_remoteimage_connect
 # Connect to the remote server via the specified protocol
 #   --nbd <0..10>         use NBD protocol to connect the remote server with specified NBD device number
@@ -423,6 +435,7 @@ function cmd_remoteimage_connect {
 }
 
 # @sudo cmd_remoteimage_disconnect admin
+# @restrict cmd_remoteimage_disconnect admin
 # @doc cmd_remoteimage_disconnect
 # Disconnect NBD session
 #   -y, --yes       do not ask for confirmation

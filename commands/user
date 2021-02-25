@@ -18,6 +18,7 @@ DBUS_DELETE="xyz.openbmc_project.Object.Delete"
 USERNAME_REGEX="^[\.a-zA-Z0-9_-]+$"
 
 # @sudo cmd_create admin
+# @restrict cmd_create admin
 # @doc cmd_create
 # Create a new user
 #   -n, --name NAME   User name
@@ -57,6 +58,7 @@ function cmd_create {
 }
 
 # @sudo cmd_show admin
+# @restrict cmd_show admin
 # @doc cmd_show
 # Show specific user
 #   USERNAME...    Show user with specific name (multiple names can be added)
@@ -78,6 +80,7 @@ function cmd_show {
 }
 
 # @sudo cmd_list admin
+# @restrict cmd_list admin
 # @doc cmd_list
 # Show list of users
 function cmd_list {
@@ -88,6 +91,7 @@ function cmd_list {
 }
 
 # @sudo cmd_delete admin
+# @restrict cmd_delete admin
 # @doc cmd_delete
 # Delete users
 #   -y, --yes       Do not ask for confirmation
@@ -141,6 +145,7 @@ function cmd_set {
 }
 
 # @sudo cmd_set_password admin
+# @restrict cmd_set_password admin
 # @doc cmd_set_password
 # Update user password
 #   USERNAME    User account name
@@ -158,6 +163,7 @@ function cmd_set_password {
 }
 
 # @sudo cmd_set_role admin
+# @restrict cmd_set_role admin
 # @doc cmd_set_role
 # Update user role
 #   -n, --name NAME   User name

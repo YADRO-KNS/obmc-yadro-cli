@@ -17,6 +17,7 @@ function cmd_led {
 }
 
 # @sudo cmd_led_status admin,operator,user
+# @restrict cmd_led_status admin,operator,user
 # @doc cmd_led_status
 # Check the identification LED status
 function cmd_led_status {
@@ -33,6 +34,7 @@ function cmd_led_status {
 }
 
 # @sudo cmd_led_on admin,operator
+# @restrict cmd_led_on admin,operator
 # @doc cmd_led_on
 # Turn the identification LED on
 function cmd_led_on {
@@ -44,6 +46,7 @@ function cmd_led_on {
 }
 
 # @sudo cmd_led_off admin,operator
+# @restrict cmd_led_off admin,operator
 # @doc cmd_led_off
 # Turn the identification LED off
 function cmd_led_off {

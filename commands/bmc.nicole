@@ -64,6 +64,7 @@ function cmd_info_uptime {
 }
 
 # @sudo cmd_info_version admin,operator,user
+# @restrict cmd_info_version admin,operator,user
 # @doc cmd_info_version
 # Show version of BMC and BIOS/UEFI
 #   -b, --bmc   Show BMC version
@@ -100,6 +101,7 @@ function cmd_datetime {
 }
 
 # @sudo cmd_datetime_method admin
+# @restrict cmd_datetime_method admin
 # @doc cmd_datetime_method
 # Change time synchronization method
 #  {manual|ntp}
@@ -142,6 +144,7 @@ function cmd_datetime_method {
 }
 
 # @sudo cmd_datetime_set admin
+# @restrict cmd_datetime_set admin
 # @doc cmd_datetime_set
 # Set system time manually
 #   YYYY-MM-DD-HH-mm-SS   Time to set
@@ -177,6 +180,7 @@ function cmd_datetime_show {
 }
 
 # @sudo cmd_datetime_ntpconfig admin
+# @restrict cmd_datetime_ntpconfig admin
 # @doc cmd_datetime_ntpconfig
 # Configure NTP server connection
 #  {add|del} IP
@@ -188,6 +192,7 @@ function cmd_datetime_ntpconfig {
 }
 
 # @sudo cmd_ifconfig admin
+# @restrict cmd_ifconfig admin
 # @doc cmd_ifconfig
 # BMC network configuration
 function cmd_ifconfig {
@@ -201,6 +206,7 @@ function cmd_syslog {
 }
 
 # @sudo cmd_syslog_show admin,operator,user
+# @restrict cmd_syslog_show admin,operator,user
 # @doc cmd_syslog_show
 # Show actual remote syslog server
 function cmd_syslog_show {
@@ -230,6 +236,7 @@ function cmd_syslog_show {
 }
 
 # @sudo cmd_syslog_set admin
+# @restrict cmd_syslog_set admin
 # @doc cmd_syslog_set
 # Configure remote syslog server
 #  address[:port] - to change settings
@@ -253,6 +260,7 @@ function cmd_syslog_set {
 }
 
 # @sudo cmd_syslog_reset admin
+# @restrict cmd_syslog_reset admin
 # @doc cmd_syslog_reset
 # Reset syslog settins. Alias for the syslog set command without arguments.
 function cmd_syslog_reset {
@@ -272,6 +280,7 @@ function cmd_config {
 }
 
 # @sudo cmd_config_backup admin
+# @restrict cmd_config_backup admin
 # @doc cmd_config_backup
 # Backup the BMC configuration to a file
 #   FILE    backup file
@@ -284,6 +293,7 @@ function cmd_config_backup {
 }
 
 # @sudo cmd_config_restore admin
+# @restrict cmd_config_restore admin
 # @doc cmd_config_restore
 # Restore the BMC configuration from a file
 #   FILE    backup file
@@ -296,6 +306,7 @@ function cmd_config_restore {
 }
 
 # @sudo cmd_config_default admin
+# @restrict cmd_config_default admin
 # @doc cmd_config_default
 # Restore the factory default BMC config
 #  -k, --keepipconfig   Keep network settings
@@ -319,6 +330,7 @@ function cmd_update {
 }
 
 # @sudo cmd_update_start admin
+# @restrict cmd_update_start admin
 # @doc cmd_update_start
 # Update BMC and BIOS.
 #  -c, --clearcfg  Reset BMC settings to manufacture defaults
@@ -364,6 +376,7 @@ function cmd_update_start {
 #}
 
 # @sudo cmd_reboot admin
+# @restrict cmd_reboot admin
 # @doc cmd_reboot
 # Reboot the BMC
 #  -f, --force     Forced BMC reboot

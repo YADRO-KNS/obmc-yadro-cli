@@ -16,6 +16,15 @@ GROUP_ADMIN="%GROUP_ADMIN%"
 GROUP_OPERATOR="%GROUP_OPERATOR%"
 GROUP_USER="%GROUP_USER%"
 
+# If we are running escalated, we have GROUP already set by the caller
+if [[ "${USER}" != "root" || ! -v GROUP ]]; then
+  if [[ "${USER}" = "root" ]]; then
+    echo "Can't run CLI commands as root directly, use an admin account" >&2
+    exit 2
+  fi
+  GROUP=$(id -Gn | sed -n 's/.*\(%GROUP_REGEX%\)[ ]*.*$/\1/gp')
+fi
+
 # Lookup for group by role name (privilege in BMC terms)
 function role_to_group {
   case "$1" in
@@ -42,6 +51,8 @@ function group_to_role {
   esac
 }
 
+ROLE=$(group_to_role ${GROUP})
+
 # command to execute
 USER_CMD="${BASH_SOURCE[0]}"
 REAL_CMD="/usr/share/cli/$(basename "${USER_CMD}")"
@@ -60,8 +71,8 @@ function subcommand {
     print_help "${parent}" | head -n 1
     local cmd
     for cmd in ${children[*]}; do
-      printf "%-16s " "${cmd#${parent}_}"
-      print_help "${cmd}" | head -n 1
+      local help=$(print_help "${cmd}" | head -n 1)
+      [[ -n "${help}" ]] && printf "%-16s %s\n" "${cmd#${parent}_}" "${help}"
     done
     return
   fi
@@ -86,7 +97,7 @@ function subcommand {
   # if command has @sudo tag - we need to run the function with elevated privileges
   if grep -q "^#\\s*@sudo\\s\\+${cmd}\\s" "${REAL_CMD}" && [[ ${EUID} -ne 0 ]]; then
     local sub_path="${cmd/#cmd_}"
-    exec sudo ${USER_CMD} ${sub_path//_/ } "$@"
+    GROUP=${GROUP} exec sudo ${USER_CMD} ${sub_path//_/ } "$@"
   fi
 
   # execute subcommand
@@ -95,7 +106,36 @@ function subcommand {
 
 # Print help for specified command.
 function print_help {
-  sed -n "/^#\\s\\+@doc\\s\\+${1}\\s*$/,/^function/ s/^#\\s*//p" "${REAL_CMD}" | tail -n+2
+  local user_cmd=${1}
+  awk "
+  # Clear match on non-comment lines
+  /^[^#]/ { matched = 0; restricted = 0; next }
+
+  # All comment blocks with @restrict are checked against the current role
+  # and marked as matching if needed
+  /^#\\s+@restrict\\s+${user_cmd}\\s+/ {
+    restricted = 1
+    split(\$4,roles,\",\")
+    for (i = 0; i < length(roles); i++) {
+      if (roles[i] == \"${ROLE}\") {
+        matched = 1
+      }
+    }
+    next
+  }
+
+  # Any comment line after @doc for the command must be printed
+  # if there was no @restrict in this comment block
+  /^#\\s+@doc\\s+${user_cmd}\\s*$/ {
+    if (!restricted) {
+      matched = 1
+    }
+    next
+  }
+
+  # Print the matching line, cut off the leading comment symbols
+  /^#/ { if (matched) print substr(\$0,3) }
+  " < "${REAL_CMD}"
 }
 
 # Bash auto completion support: print subcommands
@@ -137,7 +177,31 @@ function cmd {
   subcommand "$@"
 }
 
-source "${REAL_CMD}"
+# Only import the functions allowed for the current role
+source <(awk -vrole="${ROLE}" '
+          # Initially assume everything is allowed
+          BEGIN { restricted = 0 }
+
+          /^#\s+@restrict\s+[^\s]+/ {
+            # If there is @restrict, assume the function is not allowed
+            restricted = 1
+            split($4,roles,",")
+            for (i = 0; i < length(roles); i++) {
+              if (roles[i] == role) {
+                # If the role matches, allow the function
+                restricted = 0
+              }
+            }
+          }
+
+          {
+            if (!restricted) print
+          }
+
+          # End of top-level block means end of restricted function
+          /^\}/ { restricted = 0; }
+
+          ' ${REAL_CMD})
 
 if [[ $# -ne 0 ]] && [[ $1 == autocomplete ]]; then
   # Special case - request for bash autocompletion

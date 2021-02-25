@@ -11,6 +11,7 @@ function cmd_power {
 }
 
 # @sudo cmd_power_on admin,operator
+# @restrict cmd_power_on admin,operator
 # @doc cmd_power_on
 # Turn the host on
 function cmd_power_on {
@@ -20,6 +21,7 @@ function cmd_power_on {
 }
 
 # @sudo cmd_power_off admin,operator
+# @restrict cmd_power_off admin,operator
 # @doc cmd_power_off
 # Turn the host off
 #  -f, --forced    Forced shutdown
@@ -56,6 +58,7 @@ function cmd_power_off {
 }
 
 # @sudo cmd_power_status admin,operator
+# @restrict cmd_power_status admin,operator
 # @doc cmd_power_status
 # Get host power status
 function cmd_power_status {
@@ -70,6 +73,7 @@ function cmd_virtualmedia {
 }
 
 # @sudo cmd_virtualmedia_mount admin
+# @restrict cmd_virtualmedia_mount admin
 # @doc cmd_virtualmedia_mount
 # Mount a virtual media
 #  --usb    - the USB interface type
@@ -112,6 +116,7 @@ function cmd_virtualmedia_mount {
 }
 
 # @sudo cmd_virtualmedia_umount admin
+# @restrict cmd_virtualmedia_umount admin
 # @doc cmd_virtualmedia_umount
 # Unmount the virtual media
 #  -y, --yes  - does not ask for interactive confirmation
