@@ -16,6 +16,9 @@ GROUP_ADMIN="priv-admin"
 GROUP_OPERATOR="priv-operator"
 GROUP_USER="priv-user"
 
+# Single-quotes are a must, or extra escaping needs to be added
+GROUP_REGEX='priv-[^ ]\\+'
+
 BIN_DIR="/usr/bin"
 SHARE_DIR="/usr/share/cli"
 SUDO_DIR="/etc/sudoers.d"
@@ -35,6 +38,9 @@ while [ $# -gt 0 ]; do
       echo "  -a, --admin NAME      Group name for administrators [${GROUP_ADMIN}]"
       echo "  -o, --operator NAME   Group name for operators [${GROUP_OPERATOR}]"
       echo "  -u, --user NAME       Group name for users [${GROUP_USER}]"
+      echo "  -x, --regex REGEX     Regex to match all Groups, must have"
+      echo "                        special chars escaped against shell"
+      echo "                        expansion"
       echo "  -h, --help            Print this help and exit"
       exit 0
       ;;
@@ -43,6 +49,7 @@ while [ $# -gt 0 ]; do
     -a | --admin) GROUP_ADMIN="$2"; shift;;
     -o | --operator) GROUP_OPERATOR="$2"; shift;;
     -u | --user) GROUP_USER="$2"; shift;;
+    -x | --regex) GROUP_REGEX="$2"; shift;;
     *)
       echo "Invalid argument: $1" >&2
       exit 1
@@ -87,6 +94,7 @@ install_cli_script() {
   sed -e "s/%GROUP_ADMIN%/${GROUP_ADMIN}/g" \
       -e "s/%GROUP_OPERATOR%/${GROUP_OPERATOR}/g" \
       -e "s/%GROUP_USER%/${GROUP_USER}/g" \
+      -e "s/%GROUP_REGEX%/${GROUP_REGEX}/g" \
       "${src_file}" > "${INSTALL_ROOT}${real_file}"
   chmod 0444 "${INSTALL_ROOT}${real_file}"
   ln -sr "${INSTALL_ROOT}${BIN_DIR}/clicmd" "${INSTALL_ROOT}${link_file}"
@@ -112,6 +120,9 @@ install_cli_script() {
     done
   done
   unset cmd roles role group
+  # The GROUP variable is used to pass the original group of the caller
+  # to the escalated invocation, need to keep it
+  echo "Defaults!${link_file} env_keep+=GROUP" >> ${sudo_file}
   chmod 0440 "${sudo_file}"
 
   # add command to autocompletion
@@ -126,6 +137,11 @@ install_cli_script() {
 echo "Installing Phosphor CLI environment to '${INSTALL_ROOT}' for '${MACHINE}':"
 
 install -DT --mode 0555 "${THIS_DIR}/clicmd" "${INSTALL_ROOT}/usr/bin/clicmd"
+sed -e "s/%GROUP_ADMIN%/${GROUP_ADMIN}/g" \
+    -e "s/%GROUP_OPERATOR%/${GROUP_OPERATOR}/g" \
+    -e "s/%GROUP_USER%/${GROUP_USER}/g" \
+    -e "s/%GROUP_REGEX%/${GROUP_REGEX}/g" \
+    -i "${INSTALL_ROOT}/usr/bin/clicmd"
 install -DT --mode 0644 "${THIS_DIR}/profile.in" "${INSTALL_ROOT}${DEFAULT_PROFILE}"
 install -DT --mode 0644 "${THIS_DIR}/functions" \
     "${INSTALL_ROOT}${SHARE_DIR}/.include/functions"
