@@ -7,6 +7,41 @@
 # prevent modification of executable path
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
 
+# Role related definitions
+ROLE_ADMIN="admin"
+ROLE_OPERATOR="operator"
+ROLE_USER="user"
+
+GROUP_ADMIN="%GROUP_ADMIN%"
+GROUP_OPERATOR="%GROUP_OPERATOR%"
+GROUP_USER="%GROUP_USER%"
+
+# Lookup for group by role name (privilege in BMC terms)
+function role_to_group {
+  case "$1" in
+    ${ROLE_ADMIN})    echo "${GROUP_ADMIN}";;
+    ${ROLE_OPERATOR}) echo "${GROUP_OPERATOR}";;
+    ${ROLE_USER})     echo "${GROUP_USER}";;
+    *)
+      echo "Invalid role name: $1" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Lookup for role (privilege in BMC terms) by group name
+function group_to_role {
+  case "$1" in
+    ${GROUP_ADMIN})    echo "${ROLE_ADMIN}";;
+    ${GROUP_OPERATOR}) echo "${ROLE_OPERATOR}";;
+    ${GROUP_USER})     echo "${ROLE_USER}";;
+    *)
+      echo "Invalid group name: $1" >&2
+      return 1
+      ;;
+  esac
+}
+
 # command to execute
 USER_CMD="${BASH_SOURCE[0]}"
 REAL_CMD="/usr/share/cli/$(basename "${USER_CMD}")"
