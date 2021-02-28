@@ -4,8 +4,7 @@
 # CLI: Host operations
 #
 
-# @sudo cmd_info admin,operator
-# @restrict cmd_info admin,operator
+# @sudo cmd_info admin,operator,user
 # @doc cmd_info
 # View the general host information
 function cmd_info {
@@ -19,36 +18,39 @@ function cmd_boot {
   subcommand "$@"
 }
 
-# @doc cmd_boot_next
-# Choose boot source for the next boot
-#   -l, --local
-#   -p, --pxe
-#   -s, --san
-#   -u, --usb
-#   -m, --media
+## @sudo cmd_boot_next admin
+## @restrict cmd_boot_next admin
+## @doc cmd_boot_next
+## Choose boot source for the next boot
+##   -l, --local
+##   -p, --pxe
+##   -s, --san
+##   -u, --usb
+##   -m, --media
 #function cmd_boot_next {
 #  not implemented
 #}
 
-# @doc cmd_boot_persistent
-# Choose default boot source
-#   -l, --local
-#   -p, --pxe
-#   -s, --san
-#   -u, --usb
-#   -m, --media
+## @sudo cmd_boot_persistent admin
+## @restrict cmd_boot_persistent admin
+## @doc cmd_boot_persistent
+## Choose default boot source
+##   -l, --local
+##   -p, --pxe
+##   -s, --san
+##   -u, --usb
+##   -m, --media
 #function cmd_boot_persistent {
 #  not implemented
 #}
 
-# @doc cmd_boot_status
-# Show actual setting for boot source
+## @doc cmd_boot_show
+## Show actual setting for boot source
 #function cmd_boot_status {
 #  not implemented
 #}
 
-# @sudo cmd_boot_progress admin,operator
-# @restrict cmd_boot_progress admin,operator
+# @sudo cmd_boot_progress admin,operator,user
 # @doc cmd_boot_progress
 # Show host boot progress status
 function cmd_boot_progress {
@@ -109,14 +111,15 @@ function cmd_power_off {
   fi
 }
 
-# @doc cmd_power_reboot
-# Performs host reboot
+## @sudo cmd_power_reboot admin,operator
+## @restrict cmd_power_reboot admin,operator
+## @doc cmd_power_reboot
+## Performs host reboot
 #function cmd_power_reboot {
 #  not implemented
 #}
 
-# @sudo cmd_power_status admin,operator
-# @restrict cmd_power_status admin,operator
+# @sudo cmd_power_status admin,operator,user
 # @doc cmd_power_status
 # Get host power status
 function cmd_power_status {
@@ -124,20 +127,24 @@ function cmd_power_status {
   obmcutil status | sed 's/xyz.*\.//'
 }
 
-# @doc cmd_power_capping
-# Configure power capping
-#   -d, --disable       Disable power capping
-#   -e, --enable WATTS  Enable power capping
+## @sudo cmd_power_capping admin
+## @restrict cmd_power_capping admin
+## @doc cmd_power_capping
+## Configure power capping
+##   -d, --disable       Disable power capping
+##   -e, --enable WATTS  Enable power capping
 #function cmd_power_capping {
 #  not implemented
 #}
 
-# @doc cmd_power_usage
-# View power usage
+## @doc cmd_power_usage
+## View power usage
 #function cmd_power_usage {
 #  not implemented
 #}
 
+# @sudo cmd_console admin,user
+# @restrict cmd_console admin,user
 # @doc cmd_console
 # Open virtual console
 function cmd_console {
@@ -227,35 +234,44 @@ function cmd_nmi {
   echo "SRESET signal has been sent, expect kdump on the host."
 }
 
-# @doc cmd_virtualmedia
-# Virtual media operations
+## @restrict cmd_virtualmedia admin
+## @doc cmd_virtualmedia
+## Virtual media operations
 #function cmd_virtualmedia {
 #  subcommand "$@"
 #}
 
-# @doc cmd_virtualmedia_mount
-# Mount a virtual media
-#  -p, --path <location> — path to image file
-#  -u, --user <username> — username to access the share
-#  -r, --readonly — mount virtual media in read-only mode
+## @sudo cmd_virtualmedia_mount admin
+## @restrict cmd_virtualmedia_mount admin
+## @doc cmd_virtualmedia_mount
+## Mount a virtual media
+##  -p, --path <location> — path to image file
+##  -u, --user <username> — username to access the share
+##  -r, --readonly — mount virtual media in read-only mode
 #function cmd_virtualmedia_mount {
 #  not implemented
 #}
 
-# @doc cmd_virtualmedia_unmount
-# Unmount the virtual media
+## @sudo cmd_virtualmedia_unmount admin
+## @restrict cmd_virtualmedia_unmount admin
+## @doc cmd_virtualmedia_unmount
+## Unmount the virtual media
 #function cmd_virtualmedia_unmount {
 #  not implemented
 #}
 
-# @doc cmd_virtualmedia_writeprotection
-# Enable or disable virtual media write protection
+## @sudo cmd_virtualmedia_writeprotection admin
+## @restrict cmd_virtualmedia_writeprotection admin
+## @doc cmd_virtualmedia_writeprotection
+## Enable or disable virtual media write protection
 #function cmd_virtualmedia_writeprotection {
 #  not implemented
 #}
 
-# @doc cmd_virtualmedia_status
-# Check the virtual media status
+## @sudo cmd_virtualmedia_status admin
+## @restrict cmd_virtualmedia_status admin
+## @doc cmd_virtualmedia_status
+## Check the virtual media status
 #function cmd_virtualmedia_status {
 #  not implemented
 #}

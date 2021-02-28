@@ -4,16 +4,16 @@
 # CLI: System health information
 #
 
-# @sudo cmd_inventory admin,operator
-# @restrict cmd_inventory admin,operator
+# @sudo cmd_inventory admin,operator,user
+# @restrict cmd_inventory admin,operator,user
 # @doc cmd_inventory
 # System inventory
 function cmd_inventory {
   ipmitool fru
 }
 
-# @sudo cmd_sensors admin,operator
-# @restrict cmd_sensors admin,operator
+# @sudo cmd_sensors admin,operator,user
+# @restrict cmd_sensors admin,operator,user
 # @doc cmd_sensors
 # Sensor readings
 function cmd_sensors {
@@ -40,8 +40,8 @@ function cmd_logs_list {
     done
 }
 
-# @sudo cmd_logs_show admin,operator
-# @restrict cmd_logs_show admin,operator
+# @sudo cmd_logs_show admin,operator,user
+# @restrict cmd_logs_show admin,operator,user
 # @doc cmd_logs_show
 # Get system logs
 function cmd_logs_show {
@@ -59,8 +59,8 @@ function cmd_logs_show {
   abort_badarg "${name}"
 }
 
-# @sudo cmd_logs_export admin,operator
-# @restrict cmd_logs_export admin,operator
+# @sudo cmd_logs_export admin,operator,user
+# @restrict cmd_logs_export admin,operator,user
 # @doc cmd_logs_export
 # Export system logs
 function cmd_logs_export {

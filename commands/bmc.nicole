@@ -64,7 +64,6 @@ function cmd_info_uptime {
 }
 
 # @sudo cmd_info_version admin,operator,user
-# @restrict cmd_info_version admin,operator,user
 # @doc cmd_info_version
 # Show version of BMC and BIOS/UEFI
 #   -b, --bmc   Show BMC version
@@ -199,14 +198,14 @@ function cmd_ifconfig {
   netconfig "$@"
 }
 
+# @restrict cmd_syslog admin
 # @doc cmd_syslog
 # Remote logging settings
 function cmd_syslog {
   subcommand "$@"
 }
 
-# @sudo cmd_syslog_show admin,operator,user
-# @restrict cmd_syslog_show admin,operator,user
+# @sudo cmd_syslog_show admin
 # @doc cmd_syslog_show
 # Show actual remote syslog server
 function cmd_syslog_show {
@@ -267,8 +266,10 @@ function cmd_syslog_reset {
     cmd_syslog_set :0
 }
 
-# @doc cmd_snmp
-# Syslog server configuration
+## @sudo cmd_snmp admin,operator
+## @restrict cmd_snmp admin,operator
+## @doc cmd_snmp
+## Syslog server configuration
 #function cmd_snmp {
 #  not implemented
 #}
@@ -323,6 +324,7 @@ function cmd_config_default {
   fwupdate --reset
 }
 
+# @restrict cmd_update admin
 # @doc cmd_update
 # BMC and BIOS update
 function cmd_update {
@@ -363,14 +365,19 @@ function cmd_update_start {
   fwupdate ${reset} ${yes} -f "${fwfile}"
 }
 
-# @doc cmd_update_status
-# Returns the status of the firmware update process
+# Update the parent command's @sudo when implement this
+## @sudo cmd_update_rollback admin,operator
+## @restrict cmd_update_rollback admin,operator
+## @doc cmd_update_status
+## Returns the status of the firmware update process
 #function cmd_update_status {
 #  not implemented
 #}
 
-# @doc cmd_update_rollback
-# Rollback to the standby firmware
+## @sudo cmd_update_rollback admin
+## @restrict cmd_update_rollback admin
+## @doc cmd_update_rollback
+## Rollback to the standby firmware
 #function cmd_update_rollback {
 #  not implemented
 #}

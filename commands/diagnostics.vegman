@@ -17,7 +17,6 @@ function cmd_led {
 }
 
 # @sudo cmd_led_status admin,operator,user
-# @restrict cmd_led_status admin,operator,user
 # @doc cmd_led_status
 # Check the identification LED status
 function cmd_led_status {
