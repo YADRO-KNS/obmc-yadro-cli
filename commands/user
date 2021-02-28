@@ -26,6 +26,11 @@ USERNAME_REGEX="^[\.a-zA-Z0-9_-]+$"
 function cmd_create {
   local name=""
   local role="${ROLE_USER}"
+  if [[ $# -eq 0 ]]; then
+    user create help
+    return 1
+  fi
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -n | --name)
@@ -160,6 +165,13 @@ function cmd_set_password {
     return 1
   fi
   passwd "${name}"
+}
+
+# @doc cmd_set_mypassword
+# Change own password
+function cmd_set_mypassword {
+  expect_noarg "$@"
+  passwd
 }
 
 # @sudo cmd_set_role admin
