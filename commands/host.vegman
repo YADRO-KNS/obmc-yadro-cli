@@ -57,8 +57,15 @@ function cmd_power_off {
   fi
 }
 
-# @sudo cmd_power_status admin,operator
-# @restrict cmd_power_status admin,operator
+## @sudo cmd_power_reboot admin,operator
+## @restrict cmd_power_status admin,operator
+## @doc cmd_power_reboot
+## Performs host reboot
+#function cmd_power_reboot {
+#  not implemented
+#}
+
+# @sudo cmd_power_status admin,operator,user
 # @doc cmd_power_status
 # Get host power status
 function cmd_power_status {
@@ -66,6 +73,24 @@ function cmd_power_status {
   ipmitool power status
 }
 
+## @sudo cmd_power_capping admin
+## @restrict cmd_power_capping admin
+## @doc cmd_power_capping
+## Configure power capping
+##   -d, --disable       Disable power capping
+##   -e, --enable WATTS  Enable power capping
+#function cmd_power_capping {
+#  not implemented
+#}
+
+## @doc cmd_power_usage
+## View power usage
+#function cmd_power_usage {
+#  not implemented
+#}
+
+# @sudo cmd_virtualmedia admin
+# @restrict cmd_virtualmedia admin
 # @doc cmd_virtualmedia
 # Access Virtual Media
 function cmd_virtualmedia {
@@ -138,6 +163,8 @@ function cmd_virtualmedia_umount {
   usb-ctrl eject "usb.ms.cli"
 }
 
+# @sudo cmd_console admin,user
+# @restrict cmd_console admin,user
 # @doc cmd_console
 # Open virtual console
 function cmd_console {

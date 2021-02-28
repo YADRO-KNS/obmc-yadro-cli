@@ -17,7 +17,6 @@ function cmd_led {
 }
 
 # @sudo cmd_led_status admin,operator,user
-# @restrict cmd_led_status admin,operator,user
 # @doc cmd_led_status
 # Check the identification LED status
 function cmd_led_status {
@@ -57,50 +56,56 @@ function cmd_led_off {
   cmd_led_status
 }
 
-# @doc cmd_intrusion
-# Intrusion sensor operations
+## @doc cmd_intrusion
+## Intrusion sensor operations
 #function cmd_intrusion {
 #  subcommand "$@"
 #}
 
-# @doc cmd_intrusion_show
-# Show status of intrusion alert
+## @doc cmd_intrusion_show
+## Show status of intrusion alert
 #function cmd_intrusion_show {
 #  not implemented
 #}
 
-# @doc cmd_intrusion_clear
-# Clear intrusion alert
+## @sudo cmd_intrusion_clear admin
+## @restrict cmd_intrusion_clear admin
+## @doc cmd_intrusion_clear
+## Clear intrusion alert
 #function cmd_intrusion_clear {
 #  not implemented
 #}
 
-# @doc cmd_callhome
-# CallHome operations
+## @doc cmd_callhome
+## CallHome operations
 #function cmd_callhome {
 #  subcommand "$@"
 #}
 
-# @doc cmd_callhome_configure
-# Configure location for CallHome reports
+## @sudo cmd_callhome_configure admin
+## @restrict cmd_callhome_configure admin
+## @doc cmd_callhome_configure
+## Configure location for CallHome reports
 #function cmd_callhome_configure {
 #  not implemented
 #}
 
-# @doc cmd_callhome_send
-# Send CallHome report
+## @doc cmd_callhome_send
+## Send CallHome report
 #function cmd_callhome_send {
 #  not implemented
 #}
 
-# @doc cmd_callhome_use
-# Toggle CallHome feature
+## @sudo cmd_callhome_use admin
+## @restrict cmd_callhome_use admin
+## @doc cmd_callhome_use
+## Toggle CallHome feature
 #function cmd_callhome_use {
 #  not implemented
 #}
 
-# @doc cmd_callhome_status
-# Check CallHome feature status
+## @doc cmd_callhome_status
+## Check CallHome feature status
 #function cmd_callhome_status {
 #  not implemented
 #}
