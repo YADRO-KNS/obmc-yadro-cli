@@ -158,4 +158,9 @@ for SRC_FILE in "${THIS_DIR}/commands"/*; do
   fi
 done
 
+# do not lecture users on the rules of sudo because
+# sudo is prohibited by default when CLI is installed
+echo "Defaults:ALL passwd_tries = 0, lecture = never" \
+     > ${INSTALL_ROOT}${SUDO_DIR}/sudo_defaults
+
 echo "Installation completed successfully"
