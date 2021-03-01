@@ -1,8 +1,12 @@
 #!/bin/bash -eu
+#
+# YADRO OpenBMC Command Line Interface
+# Copyright (C) 2020-2021 YADRO
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 
-#
 # CLI: System health information
-#
 
 # @sudo cmd_inventory admin,operator,user
 # @restrict cmd_inventory admin,operator,user

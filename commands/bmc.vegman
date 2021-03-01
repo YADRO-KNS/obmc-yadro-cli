@@ -1,8 +1,12 @@
 #!/bin/bash -eu
+#
+# YADRO OpenBMC Command Line Interface
+# Copyright (C) 2020-2021 YADRO
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 
-#
 # CLI: General BMC configuration
-#
 
 SETTINGS_SERVICE="xyz.openbmc_project.Settings"
 TIMESYNC_METHOD_PATH="/xyz/openbmc_project/time/sync_method"
