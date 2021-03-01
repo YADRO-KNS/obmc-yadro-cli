@@ -1,5 +1,12 @@
 #!/bin/bash -eu
 
+#
+# YADRO OpenBMC Command Line Interface
+# Copyright (C) 2020-2021 YADRO
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
 # Base CLI command handler.
 # This script is used for setting up the environment, elevating privileges
 # and handling hierarchical commands.

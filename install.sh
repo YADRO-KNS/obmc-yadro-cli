@@ -1,7 +1,9 @@
 #!/bin/sh -eu
-
 #
-# Installer.
+# YADRO OpenBMC Command Line Interface Installer
+# Copyright (C) 2020-2021 YADRO
+#
+# SPDX-License-Identifier: Apache-2.0
 #
 
 THIS_DIR="$(realpath "$(dirname "$0")")"
