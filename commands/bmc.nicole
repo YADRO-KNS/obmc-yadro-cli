@@ -71,30 +71,28 @@ function cmd_info_uptime {
 # @doc cmd_info_version
 # Show version of BMC and BIOS/UEFI
 #   -b, --bmc   Show BMC version
-#   -u, --bios  Show BIOS/UEFI version
+#   -o, --opfw  Show OpenPOWER Firmware version
 function cmd_info_version {
-  local bmc=""
-  local bios=""
+  local bmc_match='^BMC '
+  local host_match='^Host '
+  local no_match='no-match-pattern'
+  local bmc=${no_match}
+  local host=${no_match}
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -b | --bmc) bmc="y";;
-      -u | --bios) bios="y";;
+      -b | --bmc) bmc=${bmc_match};;
+      -o | --opfw) host=${host_match};;
       *) abort_badarg "$1";;
     esac
     shift
   done
 
-  if [[ -z "${bmc}${bios}" ]]; then
-    bmc="y"
-    bios="y"
+  if [[ -z "${bmc}${host}" ]]; then
+    bmc=${bmc_match}
+    host=${host_match}
   fi
 
-  if [[ -n "${bmc}" ]]; then
-    fwupdate --version | grep "^BMC "
-  fi
-  if [[ -n "${bios}" ]]; then
-    fwupdate --version | grep "^Host "
-  fi
+  fwupdate --version | grep -E "(${bmc}|${host})"
 }
 
 # @doc cmd_datetime
