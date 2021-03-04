@@ -180,16 +180,22 @@ function cmd_datetime_show {
   format_date "${compact}" "${utc}" "$(date +%s)"
 }
 
+function call_netconfig() {
+  local FNAME=${FUNCNAME[1]##cmd_}
+  local PNAME="bmc ${FNAME//_/ }"
+  exec -a "${PNAME}" netconfig --cli "$@"
+}
+
 # @sudo cmd_datetime_ntpconfig admin
 # @restrict cmd_datetime_ntpconfig admin
 # @doc cmd_datetime_ntpconfig
 # Configure NTP server connection
-#  {add|del} IP
+#  {add|del} ADDR [ADDR..]
 function cmd_datetime_ntpconfig {
-  if [[ $# -ne 2 ]]; then
-    abort_badarg "Expected exactly 2 arguments"
+  if [[ $# -lt 2 ]]; then
+    abort_badarg "Expected 2 or more arguments"
   fi
-  netconfig ntp "eth0" "$1" "$2"
+  call_netconfig ntp "eth0" "$@"
 }
 
 # @sudo cmd_ifconfig admin
@@ -197,7 +203,7 @@ function cmd_datetime_ntpconfig {
 # @doc cmd_ifconfig
 # BMC network configuration
 function cmd_ifconfig {
-  netconfig "$@"
+  call_netconfig "$@"
 }
 
 # @restrict cmd_syslog admin
