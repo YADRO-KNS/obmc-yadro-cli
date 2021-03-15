@@ -31,15 +31,20 @@ if [[ "${USER}" != "root" || ! -v GROUP ]]; then
   fi
   GROUP=$(id -Gn | sed -n 's/.*\(%GROUP_REGEX%\)[ ]*.*$/\1/gp')
 fi
+if [[ -z "${GROUP}" ]]; then
+  echo "Can't find privilege group for user ${USER}" >&2
+  exit 2
+fi
 
 # Lookup for group by role name (privilege in BMC terms)
 function role_to_group {
-  case "$1" in
+  local role="${1:-}"
+  case "${role}" in
     ${ROLE_ADMIN})    echo "${GROUP_ADMIN}";;
     ${ROLE_OPERATOR}) echo "${GROUP_OPERATOR}";;
     ${ROLE_USER})     echo "${GROUP_USER}";;
     *)
-      echo "Invalid role name: $1" >&2
+      echo "Invalid role name: ${role}" >&2
       return 1
       ;;
   esac
@@ -47,18 +52,19 @@ function role_to_group {
 
 # Lookup for role (privilege in BMC terms) by group name
 function group_to_role {
-  case "$1" in
+  local grp="${1:-}"
+  case "${grp}" in
     ${GROUP_ADMIN})    echo "${ROLE_ADMIN}";;
     ${GROUP_OPERATOR}) echo "${ROLE_OPERATOR}";;
     ${GROUP_USER})     echo "${ROLE_USER}";;
     *)
-      echo "Invalid group name: $1" >&2
+      echo "Invalid group name: ${grp}" >&2
       return 1
       ;;
   esac
 }
 
-ROLE=$(group_to_role ${GROUP})
+ROLE=$(group_to_role "${GROUP}")
 
 # command to execute
 USER_CMD="${BASH_SOURCE[0]}"
