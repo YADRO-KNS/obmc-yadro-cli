@@ -13,6 +13,7 @@ MACHINE="nicole"
 ROLE_ADMIN="admin"
 ROLE_OPERATOR="operator"
 ROLE_USER="user"
+ROLES_ALL="${ROLE_ADMIN} ${ROLE_OPERATOR} ${ROLE_USER}"
 
 GROUP_ADMIN="priv-admin"
 GROUP_OPERATOR="priv-operator"
@@ -70,9 +71,14 @@ install_cli_script() {
   src_file="$1"
   cmd_name="$(basename "${src_file}" | sed -r 's/(.+)\..+|(.*)/\1\2/')"
   cmd_desc="$(sed -n 's/^# *CLI: *//p' "${src_file}")"
+  cmd_restrict="$(sed -n 's/^# *Restrict: *//p' "${src_file}")"
   real_file="${SHARE_DIR}/${cmd_name}"
   link_file="${BIN_DIR}/${cmd_name}"
   sudo_file="${INSTALL_ROOT}${SUDO_DIR}/cli_${cmd_name}"
+
+  if [ -z "${cmd_restrict}" ]; then
+    cmd_restrict="${ROLES_ALL}"
+  fi
 
   # check
   for check_file in ${real_file} ${link_file} ${sudo_file}; do
@@ -131,9 +137,12 @@ install_cli_script() {
   echo "complete -F _cli_completion ${cmd_name}" >> "${INSTALL_ROOT}${DEFAULT_PROFILE}"
 
   # register command in help
-  echo "${cmd_name} ${cmd_desc}" >> "${INSTALL_ROOT}${HELP_FILE}"
+  for role in ${cmd_restrict}; do
+    echo "${cmd_name} ${cmd_desc}" >> "${INSTALL_ROOT}${HELP_FILE}.${role}"
+  done
+  unset role
 
-  unset sudo_file link_file real_file cmd_desc cmd_name src_file
+  unset sudo_file link_file real_file cmd_desc cmd_name cmd_restrict src_file
 }
 
 echo "Installing Phosphor CLI environment to '${INSTALL_ROOT}' for '${MACHINE}':"

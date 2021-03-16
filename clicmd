@@ -191,9 +191,25 @@ function cmd {
 }
 
 # Only import the functions allowed for the current role
-source <(awk -vrole="${ROLE}" '
+source <(awk -vrole="${ROLE}" -vcmd="$(basename ${USER_CMD})" '
           # Initially assume everything is allowed
           BEGIN { restricted = 0 }
+
+          # Mimic a not found command if it is restricted for the user
+          /^# Restrict:\s+/ {
+            prohibited=1
+            split($3,roles,",")
+            for (i = 0; i < length(roles); i++) {
+              if (roles[i] == role) {
+                # If the role matches, allow the function
+                prohibited = 0
+              }
+            }
+            if (prohibited) {
+              printf("echo \"-sh: %s: command not found\"\nexit 1\n", cmd)
+              exit 1
+            }
+          }
 
           /^#\s+@restrict\s+[^\s]+/ {
             # If there is @restrict, assume the function is not allowed
