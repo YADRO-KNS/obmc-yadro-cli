@@ -8,6 +8,51 @@
 
 # CLI: Host control operations
 
+## @doc cmd_boot
+## Boot configuration
+#function cmd_boot {
+#  subcommand "$@"
+#}
+
+## @sudo cmd_boot_next admin,operator
+## @restrict cmd_boot_next admin,operator
+## @doc cmd_boot_next
+## Choose boot source for the next boot
+##   -l, --local
+##   -p, --pxe
+##   -s, --san
+##   -u, --usb
+##   -m, --media
+#function cmd_boot_next {
+#  not implemented
+#}
+
+## @sudo cmd_boot_persistent admin,operator
+## @restrict cmd_boot_persistent admin,opertor
+## @doc cmd_boot_persistent
+## Choose default boot source
+##   -l, --local
+##   -p, --pxe
+##   -s, --san
+##   -u, --usb
+##   -m, --media
+#function cmd_boot_persistent {
+#  not implemented
+#}
+
+## @doc cmd_boot_show
+## Show actual setting for boot source
+#function cmd_boot_status {
+#  not implemented
+#}
+
+## @sudo cmd_boot_progress admin,operator,user
+## @doc cmd_boot_progress
+## Show host boot progress status
+#function cmd_boot_progress {
+#  expect_noarg "$@"
+#  obmcutil status | sed 's/xyz.*\.//'
+#}
 # @doc cmd_power
 # Host power actions, capping and usage
 function cmd_power {
@@ -167,8 +212,7 @@ function cmd_virtualmedia_umount {
   usb-ctrl eject "usb.ms.cli"
 }
 
-# @sudo cmd_console admin,user
-# @restrict cmd_console admin,user
+# @sudo cmd_console admin,operator,user
 # @doc cmd_console
 # Open virtual console
 function cmd_console {
