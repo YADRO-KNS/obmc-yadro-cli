@@ -22,8 +22,8 @@ function cmd_boot {
   subcommand "$@"
 }
 
-## @sudo cmd_boot_next admin
-## @restrict cmd_boot_next admin
+## @sudo cmd_boot_next admin,operator
+## @restrict cmd_boot_next admin,operator
 ## @doc cmd_boot_next
 ## Choose boot source for the next boot
 ##   -l, --local
@@ -35,8 +35,8 @@ function cmd_boot {
 #  not implemented
 #}
 
-## @sudo cmd_boot_persistent admin
-## @restrict cmd_boot_persistent admin
+## @sudo cmd_boot_persistent admin,operator
+## @restrict cmd_boot_persistent admin,opertor
 ## @doc cmd_boot_persistent
 ## Choose default boot source
 ##   -l, --local
@@ -147,8 +147,7 @@ function cmd_power_status {
 #  not implemented
 #}
 
-# @sudo cmd_console admin,user
-# @restrict cmd_console admin,user
+# @sudo cmd_console admin,operator,user
 # @doc cmd_console
 # Open virtual console
 function cmd_console {
