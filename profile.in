@@ -20,9 +20,16 @@ alias helpsh="builtin help"
 function help {
   local fmt="%-12s %s\n"
   local cmd desc
+  local role
+  role=$(user myrole)
+  if [[ -z "${role}" ]]; then
+    echo "Your system role is unknown, can't help you"
+    return
+  fi
+
   while read cmd desc; do
     printf "${fmt}" "${cmd}" "${desc}"
-  done < "/usr/share/cli/help"
+  done < "/usr/share/cli/help.${role}"
   # static help lines
   printf "${fmt}" "helpsh" "Print shell help"
   printf "${fmt}" "help" "Print this help"

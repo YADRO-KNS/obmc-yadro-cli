@@ -21,6 +21,15 @@ DBUS_DELETE="xyz.openbmc_project.Object.Delete"
 
 USERNAME_REGEX="^[\.a-zA-Z0-9_-]+$"
 
+# This one us used in help, need to output a single word of role
+# and nothing else. Please do not 'beautify'.
+#
+# @doc cmd_myrole
+# Show the role of the current user
+function cmd_myrole {
+  echo $(group_to_role ${GROUP})
+}
+
 # @sudo cmd_create admin
 # @restrict cmd_create admin
 # @doc cmd_create
