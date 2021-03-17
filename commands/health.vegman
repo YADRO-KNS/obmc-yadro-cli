@@ -47,8 +47,12 @@ function cmd_logs_list {
 # @sudo cmd_logs_show admin,operator,user
 # @restrict cmd_logs_show admin,operator,user
 # @doc cmd_logs_show
-# Get system logs
+# Show the selected system log
+#  LOG    The name of the log to show (see 'health logs list')
 function cmd_logs_show {
+  if [[ $# -ne 1 ]]; then
+    abort_badarg "Expected exactly 1 argument"
+  fi
   local name="${1:-}"
   local file="/usr/share/dreport.d/plugins.d/${name}"
 
