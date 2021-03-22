@@ -73,11 +73,15 @@ function cmd_info_uptime {
 #   -b, --bmc   Show BMC version
 #   -o, --opfw  Show OpenPOWER Firmware version
 function cmd_info_version {
+  # If no options are given, show everything
+  [[ $# -eq 0 ]] && set -- -b -o
+
   local bmc_match='^BMC '
   local host_match='^Host '
   local no_match='no-match-pattern'
   local bmc=${no_match}
   local host=${no_match}
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -b | --bmc) bmc=${bmc_match};;
@@ -86,11 +90,6 @@ function cmd_info_version {
     esac
     shift
   done
-
-  if [[ -z "${bmc}${host}" ]]; then
-    bmc=${bmc_match}
-    host=${host_match}
-  fi
 
   fwupdate --version | grep -E "(${bmc}|${host})"
 }
