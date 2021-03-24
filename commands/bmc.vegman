@@ -271,7 +271,7 @@ function cmd_syslog_set {
 # @sudo cmd_syslog_reset admin
 # @restrict cmd_syslog_reset admin
 # @doc cmd_syslog_reset
-# Reset syslog settins. Alias for the syslog set command without arguments.
+# Reset syslog settings. Alias for the syslog set command without arguments.
 function cmd_syslog_reset {
     cmd_syslog_set :0
 }
