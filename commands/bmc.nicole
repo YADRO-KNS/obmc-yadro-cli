@@ -162,7 +162,7 @@ function cmd_datetime_set {
 }
 
 # @doc cmd_datetime_show
-# Show system uptime
+# Show system time
 #   -c, --compact   Show last boot time in compact format
 #   -u, --utc       Show last boot time in UTC timezone
 function cmd_datetime_show {
