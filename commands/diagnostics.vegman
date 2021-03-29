@@ -25,9 +25,10 @@ function cmd_led {
 # Check the identification LED status
 function cmd_led_status {
   expect_noarg "$@"
-  local state="$(busctl get-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
-                                     ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                                     | awk '{print $NF}')"
+  local state
+  state="$(busctl get-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
+                               ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
+                               | awk '{print $NF}')"
   case "${state}" in
     true) state="ON";;
     false) state="OFF";;

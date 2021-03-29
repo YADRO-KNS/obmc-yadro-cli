@@ -56,8 +56,10 @@ function cmd_info_uptime {
     shift
   done
 
-  local sec="$(awk -F. '{print $1}' /proc/uptime)"
-  local up="$(($(date +%s) - sec))"
+  local sec
+  local up
+  sec="$(awk -F. '{print $1}' /proc/uptime)"
+  up="$(($(date +%s) - sec))"
 
   printf 'Uptime is %dd %dh %dm %ds.\n' $((sec / 86400)) \
                                         $((sec % 86400 / 3600)) \
@@ -106,10 +108,11 @@ function cmd_datetime {
 # Change time synchronization method
 #  {manual|ntp}
 function cmd_datetime_method {
-  local method="$(busctl get-property ${SETTINGS_SERVICE} \
-                                      ${TIMESYNC_METHOD_PATH} \
-                                      ${TIMESYNC_METHOD_IFACE} \
-                                      ${TIMESYNC_METHOD_PROPERTY})"
+  local method
+  method="$(busctl get-property ${SETTINGS_SERVICE} \
+                                ${TIMESYNC_METHOD_PATH} \
+                                ${TIMESYNC_METHOD_IFACE} \
+                                ${TIMESYNC_METHOD_PROPERTY})"
   method=${method##*.}
   method=${method%\"*}
 
@@ -219,17 +222,19 @@ function cmd_syslog {
 # @doc cmd_syslog_show
 # Show actual remote syslog server
 function cmd_syslog_show {
-    local addr="$(busctl get-property ${SYSLOG_CONFIG_SERVICE} \
-                                      ${SYSLOG_CONFIG_PATH} \
-                                      ${NETWORK_CLIENT_IFACE} Address \
-                  2>/dev/null)"
+    local addr
+    addr="$(busctl get-property ${SYSLOG_CONFIG_SERVICE} \
+                                ${SYSLOG_CONFIG_PATH} \
+                                ${NETWORK_CLIENT_IFACE} Address \
+                                2>/dev/null)"
     addr=${addr#*\"}
     addr=${addr%\"*}
 
-    local port="$(busctl get-property ${SYSLOG_CONFIG_SERVICE} \
-                                      ${SYSLOG_CONFIG_PATH} \
-                                      ${NETWORK_CLIENT_IFACE} Port \
-                  2>/dev/null)"
+    local port
+    port="$(busctl get-property ${SYSLOG_CONFIG_SERVICE} \
+                                ${SYSLOG_CONFIG_PATH} \
+                                ${NETWORK_CLIENT_IFACE} Port \
+                                2>/dev/null)"
     port=${port#* }
 
     echo -n "Remote syslog server: "

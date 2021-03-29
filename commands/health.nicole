@@ -75,7 +75,8 @@ function cmd_logs_export {
   local path="/run/dreport"
   local prefix="obmcdump_"
   local ext=".tar.xz"
-  local timestamp="$(date +%Y%m%d%H%M%S)"
+  local timestamp
+  timestamp="$(date +%Y%m%d%H%M%S)"
 
   mkdir -p ${path}
   chmod 0777 ${path}

@@ -25,9 +25,10 @@ function cmd_led {
 # Check the identification LED status
 function cmd_led_status {
   expect_noarg "$@"
-  local state="$(busctl get-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
-                                     ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                                     | awk '{print $NF}')"
+  local state
+  state="$(busctl get-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
+                               ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
+                               | awk '{print $NF}')"
   case "${state}" in
     true) state="ON";;
     false) state="OFF";;
@@ -125,7 +126,8 @@ function supportbundle_dbus {
   # remove previous reports
   busctl call ${mgr_svc} ${mgr_obj} xyz.openbmc_project.Collection.DeleteAll DeleteAll
   # create new report
-  local entry="$(busctl --list call ${mgr_svc} ${mgr_obj} xyz.openbmc_project.Dump.Create CreateDump)"
+  local entry
+  entry="$(busctl --list call ${mgr_svc} ${mgr_obj} xyz.openbmc_project.Dump.Create CreateDump)"
   if [[ -z "${entry}" ]]; then
     return 1
   fi
@@ -134,9 +136,10 @@ function supportbundle_dbus {
   # wait for report complete
   mapper wait ${mgr_obj}/entry/${entry}
   # get timestamp to construct file name
-  local elapsed="$(busctl --list get-property ${mgr_svc} \
-                          ${mgr_obj}/entry/${entry} \
-                          xyz.openbmc_project.Time.EpochTime Elapsed)"
+  local elapsed
+  elapsed="$(busctl --list get-property ${mgr_svc} \
+                    ${mgr_obj}/entry/${entry} \
+                    xyz.openbmc_project.Time.EpochTime Elapsed)"
   if [[ -z "${elapsed}" ]]; then
     return 1
   fi
