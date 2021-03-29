@@ -84,7 +84,8 @@ function subcommand {
     print_help "${parent}" | head -n 1
     local cmd
     for cmd in ${children[*]}; do
-      local help=$(print_help "${cmd}" | head -n 1)
+      local help
+      help=$(print_help "${cmd}" | head -n 1)
       [[ -n "${help}" ]] && printf "%-16s %s\n" "${cmd#${parent}_}" "${help}"
     done
     return

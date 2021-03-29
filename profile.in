@@ -38,8 +38,11 @@ function help {
 # callback function for bash autocomplete
 function _cli_completion {
   local cmd="${COMP_WORDS[0]}"
-  local subcmd="$(echo "${COMP_WORDS[*]:1}" | sed 's/\w\+$//')"
-  local words="$(${cmd} autocomplete ${subcmd})"
+  local subcmd
+  local words
+  subcmd="$(echo "${COMP_WORDS[*]:1}" | sed 's/\w\+$//')"
+  words="$(${cmd} autocomplete ${subcmd})"
+
   if [[ -z "${words}" ]] && [[ ${COMP_CWORD} -gt 2 ]]; then
     COMPREPLY=($(compgen -f -- ${COMP_WORDS[COMP_CWORD]}))
   else
