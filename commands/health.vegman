@@ -38,8 +38,8 @@ function cmd_logs_list {
     local brief=
     local name=
     for entry in /usr/share/dreport.d/pl_user.d/*; do
-        brief="$(awk -F: '/^#\s+@brief:/{print $2}' ${entry})"
-        name="$(realpath ${entry})"
+        brief=$(awk -F: '/^#\s+@brief:/{print $2}' ${entry})
+        name=$(realpath ${entry})
         printf "%-20s%s\n" "${name##*/}" "${brief}"
     done
 }
@@ -59,7 +59,7 @@ function cmd_logs_show {
   for link in /usr/share/dreport.d/pl_user.d/E*${name}; do
     if [[ -f "${file}" ]] && [[ "$(realpath ${link})" = "${file}" ]]; then
       DREPORT_INCLUDE="/usr/share/cli/.include" \
-      TIME_STAMP="$(date -u)" exec "${file}"
+      TIME_STAMP=$(date -u) exec "${file}"
       return 1
     fi
   done
@@ -78,7 +78,7 @@ function cmd_logs_export {
   local prefix="obmcdump_"
   local ext=".tar.xz"
   local timestamp
-  timestamp="$(date +%Y%m%d%H%M%S)"
+  timestamp=$(date +%Y%m%d%H%M%S)
 
   mkdir -p ${path}
   chmod 0777 ${path}
