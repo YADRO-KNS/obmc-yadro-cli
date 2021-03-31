@@ -108,17 +108,20 @@ install_cli_script() {
   ln -sr "${INSTALL_ROOT}${BIN_DIR}/clicmd" "${INSTALL_ROOT}${link_file}"
 
   # setup sudo
+  # We don't need any backslashes to come through here,
+  # so no `-r` on `read` is intentional.
+  # shellcheck disable=SC2162
   sed -n '/#\s*@sudo/s/.*@sudo\s*cmd_//p' "${src_file}" | while read cmd roles; do
-    if [ -z "${cmd}" -o -z "${roles}" ]; then
+    if [ -z "${cmd}" ] || [ -z "${roles}" ]; then
       echo "ERROR: Invalid @sudo entry, file ${src_file}, command ${cmd}" >&2
       exit 1
     fi
     cmd="$(echo "${cmd}" | tr '_' ' ')"
     for role in $(echo "${roles}" | tr ',' ' '); do
       case "${role}" in
-        ${ROLE_ADMIN})    group="${GROUP_ADMIN}";;
-        ${ROLE_OPERATOR}) group="${GROUP_OPERATOR}";;
-        ${ROLE_USER})     group="${GROUP_USER}";;
+        "${ROLE_ADMIN}")    group="${GROUP_ADMIN}";;
+        "${ROLE_OPERATOR}") group="${GROUP_OPERATOR}";;
+        "${ROLE_USER}")     group="${GROUP_USER}";;
         *)
           echo "ERROR: Unknown role ${role} in file ${src_file}, command ${cmd}" >&2
           exit 1;;
@@ -130,7 +133,7 @@ install_cli_script() {
   unset cmd roles role group
   # The GROUP variable is used to pass the original group of the caller
   # to the escalated invocation, need to keep it
-  echo "Defaults!${link_file} env_keep+=GROUP" >> ${sudo_file}
+  echo "Defaults!${link_file} env_keep+=GROUP" >> "${sudo_file}"
   chmod 0440 "${sudo_file}"
 
   # add command to autocompletion
@@ -161,7 +164,7 @@ for SRC_FILE in "${THIS_DIR}/commands"/*; do
   # filter out by target machine
   SRC_TARGET="$(basename "${SRC_FILE}" | sed -r 's/.+\.(.+)|.*/\1/')"
   printf "Script %-25s" "'$(basename "${SRC_FILE}")'"
-  if [ -n "${SRC_TARGET}" -a "${SRC_TARGET}" != "${MACHINE}" ]; then
+  if [ -n "${SRC_TARGET}" ] && [ "${SRC_TARGET}" != "${MACHINE}" ]; then
     echo "[SKIP]"
   else
     echo "[INSTALL]"
@@ -172,6 +175,6 @@ done
 # do not lecture users on the rules of sudo because
 # sudo is prohibited by default when CLI is installed
 echo "Defaults:ALL passwd_tries = 0, lecture = never" \
-     > ${INSTALL_ROOT}${SUDO_DIR}/sudo_defaults
+     > "${INSTALL_ROOT}${SUDO_DIR}/sudo_defaults"
 
 echo "Installation completed successfully"

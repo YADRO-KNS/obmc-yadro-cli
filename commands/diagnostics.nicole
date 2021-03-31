@@ -23,6 +23,11 @@ function cmd_led {
 # @sudo cmd_led_status admin,operator,user
 # @doc cmd_led_status
 # Check the identification LED status
+
+# The above empty line prevents this from being printed as help.
+# Shellcheck can't understand that `expect_noarg` references the arguments
+# to ensure there are none, and complains about it. Silence it here.
+# shellcheck disable=SC2120
 function cmd_led_status {
   expect_noarg "$@"
   local state
@@ -46,6 +51,9 @@ function cmd_led_on {
   busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
                       ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
                       b true
+
+  # cmd_led_status takes no arguments, silience shellcheck about it
+  # shellcheck disable=SC2119
   cmd_led_status
 }
 
@@ -58,6 +66,8 @@ function cmd_led_off {
   busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
                       ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
                       b false
+  # cmd_led_status takes no arguments, silience shellcheck about it
+  # shellcheck disable=SC2119
   cmd_led_status
 }
 
@@ -119,7 +129,7 @@ function cmd_led_off {
 function supportbundle_dbus {
   local mgr_svc="xyz.openbmc_project.Dump.Manager"
   local mgr_obj="/xyz/openbmc_project/dump"
-  local dump_dir="/var/lib/phosphor-debug-collector/dump"
+  local dump_dir="/var/lib/phosphor-debug-collector/dumps"
 
   echo "Creating SOS report..."
 
@@ -134,11 +144,11 @@ function supportbundle_dbus {
   # 'u 4' -> '4'
   entry="${entry##* }"
   # wait for report complete
-  mapper wait ${mgr_obj}/entry/${entry}
+  mapper wait "${mgr_obj}/entry/${entry}"
   # get timestamp to construct file name
   local elapsed
   elapsed=$(busctl --list get-property ${mgr_svc} \
-                   ${mgr_obj}/entry/${entry} \
+                   "${mgr_obj}/entry/${entry}" \
                    xyz.openbmc_project.Time.EpochTime Elapsed)
   if [[ -z "${elapsed}" ]]; then
     return 1
@@ -146,7 +156,7 @@ function supportbundle_dbus {
   # 't 1568116858' -> '1568116858'
   elapsed="${elapsed##* }"
 
-  local filename="/var/lib/phosphor-debug-collector/dumps/obmcdump_${entry}_${elapsed}.tar.xz"
+  local filename="${dump_dir}/obmcdump_${entry}_${elapsed}.tar.xz"
   if [[ -f ${filename} ]]; then
     echo "Report created: ${filename}"
   else

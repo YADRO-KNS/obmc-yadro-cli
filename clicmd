@@ -40,9 +40,9 @@ fi
 function role_to_group {
   local role="${1:-}"
   case "${role}" in
-    ${ROLE_ADMIN})    echo "${GROUP_ADMIN}";;
-    ${ROLE_OPERATOR}) echo "${GROUP_OPERATOR}";;
-    ${ROLE_USER})     echo "${GROUP_USER}";;
+    "${ROLE_ADMIN}")    echo "${GROUP_ADMIN}";;
+    "${ROLE_OPERATOR}") echo "${GROUP_OPERATOR}";;
+    "${ROLE_USER}")     echo "${GROUP_USER}";;
     *)
       echo "Invalid role name: ${role}" >&2
       return 1
@@ -54,9 +54,9 @@ function role_to_group {
 function group_to_role {
   local grp="${1:-}"
   case "${grp}" in
-    ${GROUP_ADMIN})    echo "${ROLE_ADMIN}";;
-    ${GROUP_OPERATOR}) echo "${ROLE_OPERATOR}";;
-    ${GROUP_USER})     echo "${ROLE_USER}";;
+    "${GROUP_ADMIN}")    echo "${ROLE_ADMIN}";;
+    "${GROUP_OPERATOR}") echo "${ROLE_OPERATOR}";;
+    "${GROUP_USER}")     echo "${ROLE_USER}";;
     *)
       echo "Invalid group name: ${grp}" >&2
       return 1
@@ -77,7 +77,10 @@ fi
 # Handle subcommand that requires additional arguments.
 function subcommand {
   local parent="${FUNCNAME[1]}"
-  declare -a children=($(declare -F | sed -n "/${parent}_[^_]*$/s/.* //p"))
+  local -a children
+
+  # This keeps shellcheck happy yet never fails. We're fine with that here.
+  mapfile -t children < <(declare -F | sed -n "/${parent}_[^_]*$/s/.* //p")
 
   if [[ $# -eq 0 ]] || [[ $1 =~ ^-*h(elp)?$ ]]; then
     # print help as a list of subcommands at the current layer
@@ -95,6 +98,8 @@ function subcommand {
   local sub="$1"
   shift
   local cmd="${parent}_${sub}"
+  # Double quotes around rhs are intentional, cmd doesn't contain regexps.
+  # shellcheck disable=SC2076
   if [[ ! " ${children[*]} " =~ " ${cmd} " ]]; then
     echo "Invalid argument: ${sub}" >&2
     return 1
@@ -111,7 +116,7 @@ function subcommand {
   # if command has @sudo tag - we need to run the function with elevated privileges
   if grep -q "^#\\s*@sudo\\s\\+${cmd}\\s" "${REAL_CMD}" && [[ ${EUID} -ne 0 ]]; then
     local sub_path="${cmd/#cmd_}"
-    GROUP=${GROUP} exec sudo ${USER_CMD} ${sub_path//_/ } "$@"
+    GROUP=${GROUP} exec sudo "${USER_CMD}" "${sub_path//_/ }" "$@"
   fi
 
   # execute subcommand
@@ -165,7 +170,8 @@ function autocomplete {
 # Ask user for confirmation.
 function confirm {
   local yn
-  read -p "Are you sure? (Type 'yes' to continue) " yn
+  # We don't want to accept `\yes` as `yes`, hence the `-r`
+  read -r -p "Are you sure? (Type 'yes' to continue) " yn
   if [[ ${yn} != yes ]]; then
     echo "Aborted by user" >&2
     return 1
@@ -192,7 +198,10 @@ function cmd {
 }
 
 # Only import the functions allowed for the current role
-source <(awk -vrole="${ROLE}" -vcmd="$(basename ${USER_CMD})" '
+# Non-constant source is intentional here. The source is verified
+# separately, so tell shellcheck to accept this.
+# shellcheck disable=SC1090
+source <(awk -vrole="${ROLE}" -vcmd="$(basename "${USER_CMD}")" '
           # Initially assume everything is allowed
           BEGIN { restricted = 0 }
 
@@ -231,7 +240,7 @@ source <(awk -vrole="${ROLE}" -vcmd="$(basename ${USER_CMD})" '
           # End of top-level block means end of restricted function
           /^\}/ { restricted = 0; }
 
-          ' ${REAL_CMD})
+          ' "${REAL_CMD}")
 
 if [[ $# -ne 0 ]] && [[ $1 == autocomplete ]]; then
   # Special case - request for bash autocompletion

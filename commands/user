@@ -27,7 +27,7 @@ USERNAME_REGEX="^[\.a-zA-Z0-9_-]+$"
 # @doc cmd_myrole
 # Show the role of the current user
 function cmd_myrole {
-  echo $(group_to_role ${GROUP})
+  group_to_role "${GROUP}"
 }
 
 # @sudo cmd_create admin
@@ -127,7 +127,7 @@ function cmd_delete {
       -y | --yes) yes="y";;
       *)
         if [[ $1 =~ ${USERNAME_REGEX} ]]; then
-          names+=( $1 )
+          names+=( "$1" )
         else
           abort_badarg "$1"
         fi
@@ -150,7 +150,7 @@ function cmd_delete {
     confirm
   fi
 
-  for name in ${names[@]}; do
+  for name in "${names[@]}"; do
     if ! busctl call ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
                      ${DBUS_DELETE} Delete 2>/dev/null; then
       echo "Error deleting user: ${name}" >&2
@@ -230,7 +230,7 @@ function cmd_set_role {
   priv=$(role_to_group "${role}")
 
   busctl set-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
-                      ${DBUS_ATTRIBUTES} "UserPrivilege" s ${priv}
+                      ${DBUS_ATTRIBUTES} "UserPrivilege" s "${priv}"
 
   echo "User ${name} now has ${role} privileges."
 }
