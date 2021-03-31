@@ -152,14 +152,15 @@ function cmd_datetime_method {
 # Set system time manually
 #   YYYY-MM-DD-HH-mm-SS   Time to set
 function cmd_datetime_set {
-  if [[ $# -eq 0 ]] || [[ $1 =~ ^\d{4}-\d\d-\d\d-\d\d-\d\d-\d\d$ ]]; then
+  # Only check format here, values are checked for sanity by `date`
+  if ! [[ ${1:-} =~ ^[0-9]{4}(-[0-9]{2}){5}$ ]]; then
     echo "Please enter date and time in YYYY-MM-DD-HH-mm-SS format" >&2
     return 1
   fi
 
   local new_date="${1:0:10}"
   local new_time="${1:11}"
-  date "${new_date} ${new_time//-/:}"
+  date "${new_date}${new_time//-/:}"
 
   echo "System time is updated."
 }
