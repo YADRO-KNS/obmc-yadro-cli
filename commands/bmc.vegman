@@ -449,6 +449,8 @@ function cmd_remoteimage_connect {
     fi
 
     echo "Connecting to NBD server ${remote_point}..."
+    # `export_name` is an option with an argument, we need splitting on it
+    # shellcheck disable=SC2086
     nbd-client ${export_name} "${address}" "${port}" "${nbd_device}"
 }
 
