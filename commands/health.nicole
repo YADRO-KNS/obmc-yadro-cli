@@ -59,7 +59,7 @@ function cmd_logs_show {
     if [[ -f "${file}" ]] && [[ "$(realpath "${link}")" = "${file}" ]]; then
       # Should exec fail, the script will abort due to `set -e` in effect
       DREPORT_INCLUDE="/usr/share/cli/.include" \
-      TIME_STAMP=$(date -u) exec "${file}"
+      TIME_STAMP="date -u" exec "${file}"
     fi
   done
 
