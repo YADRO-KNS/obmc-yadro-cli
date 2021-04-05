@@ -27,7 +27,7 @@ USERNAME_REGEX="^[\.a-zA-Z0-9_-]+$"
 # @doc cmd_myrole
 # Show the role of the current user
 function cmd_myrole {
-  echo $(group_to_role ${GROUP})
+  group_to_role "${GROUP}"
 }
 
 # @sudo cmd_create admin
@@ -65,7 +65,9 @@ function cmd_create {
     return 1
   fi
 
-  local priv="$(role_to_group "${role}")"
+  local priv
+  priv=$(role_to_group "${role}")
+ 
   busctl call ${DBUS_SERVICE} ${DBUS_ROOT_PATH} \
               ${DBUS_SERVICE} CreateUser sassb \
               "${name}" \
@@ -84,15 +86,17 @@ function cmd_show {
   while [[ $# -gt 0 ]]; do
     local user="$1"
     shift
-    local grp="$(busctl get-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${user}" \
-                                     ${DBUS_ATTRIBUTES} "UserPrivilege" \
-                                     2>/dev/null \
-                                     | awk '{gsub(/"/, "", $NF); print $NF}')"
+    local grp
+    grp=$(busctl get-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${user}" \
+                               ${DBUS_ATTRIBUTES} "UserPrivilege" \
+                               2>/dev/null \
+          | awk '{gsub(/"/, "", $NF); print $NF}')
     if [[ -z "${grp}" ]]; then
       echo "Invalid user: ${user}" >&2
       return 1
     fi
-    local role="$(group_to_role ${grp})"
+    local role
+    role=$(group_to_role "${grp}")
     echo "${user}: ${role}"
   done
 }
@@ -123,7 +127,7 @@ function cmd_delete {
       -y | --yes) yes="y";;
       *)
         if [[ $1 =~ ${USERNAME_REGEX} ]]; then
-          names+=( $1 )
+          names+=( "$1" )
         else
           abort_badarg "$1"
         fi
@@ -146,7 +150,7 @@ function cmd_delete {
     confirm
   fi
 
-  for name in ${names[@]}; do
+  for name in "${names[@]}"; do
     if ! busctl call ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
                      ${DBUS_DELETE} Delete 2>/dev/null; then
       echo "Error deleting user: ${name}" >&2
@@ -223,10 +227,10 @@ function cmd_set_role {
   fi
 
   local priv
-  priv="$(role_to_group "${role}")"
+  priv=$(role_to_group "${role}")
 
   busctl set-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
-                      ${DBUS_ATTRIBUTES} "UserPrivilege" s ${priv}
+                      ${DBUS_ATTRIBUTES} "UserPrivilege" s "${priv}"
 
   echo "User ${name} now has ${role} privileges."
 }

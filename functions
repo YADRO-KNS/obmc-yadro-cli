@@ -37,22 +37,24 @@ function add_copy_file()
 # @param $2 Plugin description used for logging.
 function add_copy_sym_link_file()
 {
-    add_copy_file "$(realpath ${1})" "${2}"
+    add_copy_file "$(realpath "${1}")" "${2}"
 }
 
 # @brief log the error message
 # @param error message
 function log_error()
 {
-   echo "$($TIME_STAMP) ERROR: $@"
+   echo "$($TIME_STAMP) ERROR: " "$@"
 }
 
 # @brief log warning message
 # @param warning message
 function log_warning()
 {
+    # `verbose` comes from the caller (dreport), calm shellcheck about it
+    # shellcheck disable=SC2154
     if ((verbose == TRUE)); then
-        echo "$($TIME_STAMP) WARNING: $@"
+        echo "$($TIME_STAMP) WARNING: " "$@"
     fi
 }
 
@@ -60,8 +62,10 @@ function log_warning()
 # @param info message
 function log_info()
 {
+    # `verbose` comes from the caller (dreport), calm shellcheck about it
+    # shellcheck disable=SC2154
     if ((verbose == TRUE)); then
-        echo "$($TIME_STAMP) INFO: $@"
+        echo "$($TIME_STAMP) INFO: " "$@"
     fi
 }
 
@@ -69,6 +73,6 @@ function log_info()
 # @param message
 function log_summary()
 {
-    echo "$($TIME_STAMP) $@"
+    echo "$($TIME_STAMP) " "$@"
 }
 

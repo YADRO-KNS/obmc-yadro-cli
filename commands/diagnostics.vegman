@@ -23,11 +23,17 @@ function cmd_led {
 # @sudo cmd_led_status admin,operator,user
 # @doc cmd_led_status
 # Check the identification LED status
+
+# The above empty line prevents this from being printed as help.
+# Shellcheck can't understand that `expect_noarg` references the arguments
+# to ensure there are none, and complains about it. Silence it here.
+# shellcheck disable=SC2120
 function cmd_led_status {
   expect_noarg "$@"
-  local state="$(busctl get-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
-                                     ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                                     | awk '{print $NF}')"
+  local state
+  state=$(busctl get-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
+                              ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
+                              | awk '{print $NF}')
   case "${state}" in
     true) state="ON";;
     false) state="OFF";;
@@ -45,6 +51,9 @@ function cmd_led_on {
   busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
                       ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
                       b true
+
+  # cmd_led_status takes no arguments, silience shellcheck about it
+  # shellcheck disable=SC2119
   cmd_led_status
 }
 
@@ -57,6 +66,8 @@ function cmd_led_off {
   busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
                       ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
                       b false
+  # cmd_led_status takes no arguments, silience shellcheck about it
+  # shellcheck disable=SC2119
   cmd_led_status
 }
 
