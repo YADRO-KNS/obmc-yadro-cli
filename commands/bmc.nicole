@@ -127,6 +127,7 @@ function cmd_datetime_method {
                               ${TIMESYNC_METHOD_IFACE} \
                               ${TIMESYNC_METHOD_PROPERTY} s \
                               ${TIMESYNC_METHOD_IFACE}.Method.Manual
+          log_audit "Changed time sync method to manual"
         fi
         ;;
 
@@ -137,6 +138,7 @@ function cmd_datetime_method {
                               ${TIMESYNC_METHOD_IFACE} \
                               ${TIMESYNC_METHOD_PROPERTY} s \
                               ${TIMESYNC_METHOD_IFACE}.Method.NTP
+          log_audit "Changed time sync method to NTP"
         fi
         ;;
       *)
@@ -193,6 +195,7 @@ function cmd_datetime_set {
   local new_time="${datestr:11}"
   date "${new_date} ${new_time//-/:}"
 
+  log_audit "Set system time to ${new_date} ${new_time//-/:}"
   echo "System time is updated."
 }
 
@@ -296,6 +299,7 @@ function cmd_syslog_set {
                         ${SYSLOG_CONFIG_PATH} \
                         ${NETWORK_CLIENT_IFACE} Address s "${address}"
     echo Configured remote logging to ${address}:${port}
+    log_audit "Set remote syslog server to ${address}:${port}"
 }
 
 # @sudo cmd_syslog_reset admin
@@ -344,6 +348,7 @@ function cmd_config_restore {
     return 1
   fi
   backup restore "$1"
+  log_audit "Restored the BMC configuration from $1"
 }
 
 # @sudo cmd_config_default admin
@@ -362,6 +367,7 @@ function cmd_config_default {
     shift
   done
   exec_tool fwupdate --reset
+  log_audit "Reset BMC configuration to factory defaults"
 }
 
 # @restrict cmd_update admin
@@ -403,7 +409,9 @@ function cmd_update_start {
     return 1
   fi
 
+  log_audit "Firmware update start from ${fwfile}"
   exec_tool fwupdate ${reset} ${yes} -f "${fwfile}"
+  log_audit "Firmware update done"
 }
 
 # Update the parent command's @sudo when implement this
@@ -454,5 +462,6 @@ function cmd_reboot {
   fi
 
   echo "Reboot the BMC..."
+  log_audit "BMC reboot"
   reboot ${force}
 }

@@ -127,5 +127,6 @@ function cmd_logs_clear {
       fi
   done
 
+  log_audit "Cleared all logs"
   echo "All logs are cleared."
 }

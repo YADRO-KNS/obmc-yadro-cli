@@ -76,6 +76,7 @@ function cmd_led_on {
 
   set_led_state ${ID_LED_BLINKING} false
   set_led_state ${ID_LED_ON} true
+  log_audit "Set led on"
 
   # cmd_led_status takes no arguments, silience shellcheck about it
   # shellcheck disable=SC2119
@@ -90,6 +91,7 @@ function cmd_led_off {
   expect_noarg "$@"
   set_led_state ${ID_LED_BLINKING} false
   set_led_state ${ID_LED_ON} false
+  log_audit "Set led off"
 
   # cmd_led_status takes no arguments, silience shellcheck about it
   # shellcheck disable=SC2119

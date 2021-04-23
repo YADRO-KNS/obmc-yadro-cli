@@ -51,6 +51,7 @@ function cmd_led_on {
   busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
                       ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
                       b true
+  log_audit "Set led on"
 
   # cmd_led_status takes no arguments, silience shellcheck about it
   # shellcheck disable=SC2119
@@ -66,6 +67,7 @@ function cmd_led_off {
   busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
                       ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
                       b false
+  log_audit "Set led off"
   # cmd_led_status takes no arguments, silience shellcheck about it
   # shellcheck disable=SC2119
   cmd_led_status
@@ -159,6 +161,7 @@ function supportbundle_dbus {
   local filename="${dump_dir}/obmcdump_${entry}_${elapsed}.tar.xz"
   if [[ -f ${filename} ]]; then
     echo "Report created: ${filename}"
+    log_audit "Report created: ${filename}"
   else
     return 1
   fi

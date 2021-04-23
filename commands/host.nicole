@@ -76,6 +76,7 @@ function cmd_power_on {
   expect_noarg "$@"
   obmcutil poweron
   echo "Chassis power is switched on, host is booting up."
+  log_audit "Switched chassis power on, booting host"
 }
 
 # @sudo cmd_power_off admin,operator
@@ -109,9 +110,11 @@ function cmd_power_off {
   if [[ -n "${force}" ]]; then
     obmcutil chassisoff
     echo "Chassis power is switched off, host is down."
+    log_audit "Switched chassis power off, host is down"
   else
     obmcutil poweroff
     echo "Shutdown signal sent to host, waiting to power the system off."
+    log_audit "Requested host shutdown"
   fi
 }
 
@@ -157,6 +160,7 @@ Starting a Host console connection.
 Send <CR>~. to terminate it.
 If connected via SSH, add extra ~ characters, one per SSH connection.
 EOF
+  log_audit "Connected to host's serial console"
   exec obmc-console-client
 }
 
@@ -235,6 +239,7 @@ function cmd_nmi {
   fi
 
   echo "SRESET signal has been sent, expect kdump on the host."
+  log_audit "SRESET signal has been sent, expect kdump on the host"
 }
 
 ## @restrict cmd_virtualmedia admin
