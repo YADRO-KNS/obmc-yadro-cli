@@ -110,6 +110,7 @@ function cmd_logs_clear {
               xyz.openbmc_project.Collection.DeleteAll DeleteAll
 
   journalctl --rotate --vacuum-time=1s
+  log_audit "Cleared all logs"
   echo "All logs are cleared."
 }
 

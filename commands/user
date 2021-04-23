@@ -74,6 +74,7 @@ function cmd_create {
               4 ${GROUP_IPMI} ${GROUP_REDFISH} ${GROUP_WEB} ${GROUP_SSH} \
               "${priv}" \
               true
+  log_audit "Created user ${name}, ${role}"
   echo "User ${name} created."
 }
 
@@ -156,6 +157,7 @@ function cmd_delete {
       echo "Error deleting user: ${name}" >&2
       return 1
     fi
+    log_audit "Removed user ${name}"
     echo "User ${name} removed."
   done
 }
@@ -181,14 +183,14 @@ function cmd_set_password {
     echo "Invalid user: ${name}" >&2
     return 1
   fi
-  passwd "${name}"
+  passwd "${name}" && log_audit "Change of password for ${name}"
 }
 
 # @doc cmd_set_mypassword
 # Change own password
 function cmd_set_mypassword {
   expect_noarg "$@"
-  passwd
+  passwd && log_audit "Change of own password"
 }
 
 # @sudo cmd_set_role admin
@@ -232,5 +234,6 @@ function cmd_set_role {
   busctl set-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
                       ${DBUS_ATTRIBUTES} "UserPrivilege" s "${priv}"
 
+  log_audit "Set role ${role} for user ${name}"
   echo "User ${name} now has ${role} privileges."
 }

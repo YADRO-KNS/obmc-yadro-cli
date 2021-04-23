@@ -83,21 +83,6 @@ function exec_tool {
   exec -a "${PNAME}" "${TOOL}" "$@"
 }
 
-# @brief log audit message
-# @param message
-function log_audit()
-{
-if [ -n "${4-}" ]; then
-  echo "$1:" "${SUDO_USER:-${USER}}:" "$(sed -e 's/\/usr\/bin\///' <<< "$2")" "$3" "$4" | systemd-cat -t CLI
-  return
-fi
-if [ -n "${3-}" ]; then
-  echo "$1:" "${SUDO_USER:-${USER}}:" "$(sed -e 's/\/usr\/bin\///' <<< "$2")" "$3" | systemd-cat -t CLI
-  return
-fi
-echo "CLI audit log function called with wrong arguments:" "$@" | systemd-cat -t CLI
-}
-
 # Handle subcommand that requires additional arguments.
 function subcommand {
   local parent="${FUNCNAME[1]}"
@@ -140,11 +125,8 @@ function subcommand {
   # if command has @sudo tag - we need to run the function with elevated privileges
   if grep -q "^#\\s*@sudo\\s\\+${cmd}\\s" "${REAL_CMD}" && [[ ${EUID} -ne 0 ]]; then
     local sub_path="${cmd/#cmd_}"
-    local rc=0
     # shellcheck disable=SC2086
-    GROUP=${GROUP} sudo "${USER_CMD}" ${sub_path//_/ } "$@" || rc="$?"
-    log_audit "$rc" "${USER_CMD}" "${sub_path//_/ }" "$@"
-    exit "$rc"
+    GROUP=${GROUP} sudo "${USER_CMD}" ${sub_path//_/ } "$@"
   fi
 
   # execute subcommand
@@ -225,6 +207,13 @@ function expect_noarg {
 # Top level command handler.
 function cmd {
   subcommand "$@"
+}
+
+# @brief log audit message
+# @param message
+function log_audit()
+{
+    echo "${SUDO_USER:-${USER}}" "$@" | systemd-cat -t CLI
 }
 
 # Only import the functions allowed for the current role
