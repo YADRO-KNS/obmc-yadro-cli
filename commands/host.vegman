@@ -73,7 +73,7 @@ function cmd_power_on {
 # @restrict cmd_power_off admin,operator
 # @doc cmd_power_off
 # Turn the host off
-#  -f, --forced    Forced shutdown
+#  -f, --force     Forced shutdown
 #  -y, --yes       Do not ask for confirmation
 function cmd_power_off {
   local force=""
