@@ -65,8 +65,7 @@ function cmd_power {
 # Turn the host on
 function cmd_power_on {
   expect_noarg "$@"
-  ipmitool power on
-  echo "Chassis power is switched on, host is booting up."
+  hostpwrctl on
 }
 
 # @sudo cmd_power_off admin,operator
@@ -98,11 +97,9 @@ function cmd_power_off {
   fi
 
   if [[ -n "${force}" ]]; then
-    ipmitool chassis power off
-    echo "Chassis power is switched off, host is down."
+    hostpwrctl off
   else
-    ipmitool power soft
-    echo "Shutdown signal sent to host, waiting to power the system off."
+    hostpwrctl soft
   fi
 }
 
@@ -121,13 +118,12 @@ function cmd_power_reboot {
     shift
   done
 
-  echo -n "Host will be hard reset. Data loss may occur."
+  echo "Host will be hard reset. Data loss may occur."
   if [[ -z "${yes}" ]]; then
     confirm
   fi
 
-  ipmitool power reset
-  echo "Host has been reset"
+  hostpwrctl reboot
 }
 
 # @sudo cmd_power_status admin,operator,user
@@ -135,7 +131,7 @@ function cmd_power_reboot {
 # Get host power status
 function cmd_power_status {
   expect_noarg "$@"
-  ipmitool power status
+  hostpwrctl status
 }
 
 ## @sudo cmd_power_capping admin
