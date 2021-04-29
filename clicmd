@@ -116,7 +116,8 @@ function subcommand {
   # if command has @sudo tag - we need to run the function with elevated privileges
   if grep -q "^#\\s*@sudo\\s\\+${cmd}\\s" "${REAL_CMD}" && [[ ${EUID} -ne 0 ]]; then
     local sub_path="${cmd/#cmd_}"
-    GROUP=${GROUP} exec sudo "${USER_CMD}" "${sub_path//_/ }" "$@"
+    # shellcheck disable=SC2086
+    GROUP=${GROUP} exec sudo "${USER_CMD}" ${sub_path//_/ } "$@"
   fi
 
   # execute subcommand
