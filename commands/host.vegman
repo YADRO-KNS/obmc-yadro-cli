@@ -65,7 +65,7 @@ function cmd_power {
 # Turn the host on
 function cmd_power_on {
   expect_noarg "$@"
-  hostpwrctl on
+  exec_tool hostpwrctl on
 }
 
 # @sudo cmd_power_off admin,operator
@@ -97,9 +97,9 @@ function cmd_power_off {
   fi
 
   if [[ -n "${force}" ]]; then
-    hostpwrctl off
+    exec_tool hostpwrctl off
   else
-    hostpwrctl soft
+    exec_tool hostpwrctl soft
   fi
 }
 
@@ -123,7 +123,7 @@ function cmd_power_reboot {
     confirm
   fi
 
-  hostpwrctl reboot
+  exec_tool hostpwrctl reboot
 }
 
 # @sudo cmd_power_status admin,operator,user
@@ -131,7 +131,7 @@ function cmd_power_reboot {
 # Get host power status
 function cmd_power_status {
   expect_noarg "$@"
-  hostpwrctl status
+  exec_tool hostpwrctl status
 }
 
 ## @sudo cmd_power_capping admin
