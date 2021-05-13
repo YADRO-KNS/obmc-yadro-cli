@@ -74,6 +74,15 @@ if [[ ! -f "${REAL_CMD}" ]]; then
   exit 2
 fi
 
+# Execute an extenal tool and replace the program name
+# by the name of the CLI command that called this function
+function exec_tool {
+  local FNAME=${FUNCNAME[1]##cmd_}
+  local PNAME="bmc ${FNAME//_/ }"
+  local TOOL="$1"; shift
+  exec -a "${PNAME}" "${TOOL}" "$@"
+}
+
 # Handle subcommand that requires additional arguments.
 function subcommand {
   local parent="${FUNCNAME[1]}"

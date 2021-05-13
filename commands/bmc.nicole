@@ -93,7 +93,7 @@ function cmd_info_version {
     shift
   done
 
-  fwupdate --version | grep -E "(${bmc}|${host})"
+  exec_tool fwupdate --version | grep -E "(${bmc}|${host})"
 }
 
 # @doc cmd_datetime
@@ -183,12 +183,6 @@ function cmd_datetime_show {
   format_date "${compact}" "${utc}" "$(date +%s)"
 }
 
-function call_netconfig() {
-  local FNAME=${FUNCNAME[1]##cmd_}
-  local PNAME="bmc ${FNAME//_/ }"
-  exec -a "${PNAME}" netconfig --cli "$@"
-}
-
 # @sudo cmd_datetime_ntpconfig admin
 # @restrict cmd_datetime_ntpconfig admin
 # @doc cmd_datetime_ntpconfig
@@ -198,7 +192,7 @@ function cmd_datetime_ntpconfig {
   if [[ $# -lt 2 ]]; then
     abort_badarg "Expected 2 or more arguments"
   fi
-  call_netconfig ntp "eth0" "$@"
+  exec_tool netconfig --cli ntp "eth0" "$@"
 }
 
 # @sudo cmd_ifconfig admin
@@ -206,7 +200,7 @@ function cmd_datetime_ntpconfig {
 # @doc cmd_ifconfig
 # BMC network configuration
 function cmd_ifconfig {
-  call_netconfig "$@"
+  exec_tool netconfig --cli "$@"
 }
 
 # @restrict cmd_syslog admin
@@ -334,7 +328,7 @@ function cmd_config_default {
     esac
     shift
   done
-  fwupdate --reset
+  exec_tool fwupdate --reset
 }
 
 # @restrict cmd_update admin
@@ -375,7 +369,7 @@ function cmd_update_start {
     return 1
   fi
 
-  fwupdate ${reset} ${yes} -f "${fwfile}"
+  exec_tool fwupdate ${reset} ${yes} -f "${fwfile}"
 }
 
 # Update the parent command's @sudo when implement this
