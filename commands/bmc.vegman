@@ -12,6 +12,9 @@ SETTINGS_SERVICE="xyz.openbmc_project.Settings"
 TIMESYNC_METHOD_PATH="/xyz/openbmc_project/time/sync_method"
 TIMESYNC_METHOD_IFACE="xyz.openbmc_project.Time.Synchronization"
 TIMESYNC_METHOD_PROPERTY="TimeSyncMethod"
+PSU_REDUNDANCY_OBJECT="/xyz/openbmc_project/control/power_supply_redundancy"
+PSU_REDUNDANCY_IFACE="xyz.openbmc_project.Control.PowerSupplyRedundancy"
+PSU_REDUNDANCY_PROPERTY="PowerSupplyRedundancyEnabled"
 
 SYSLOG_CONFIG_SERVICE="xyz.openbmc_project.Syslog.Config"
 SYSLOG_CONFIG_PATH="/xyz/openbmc_project/logging/config/remote"
@@ -484,4 +487,51 @@ function cmd_remoteimage_disconnect {
   fi
 
   nbd-client -d "${nbd_device}"
+}
+
+# @sudo cmd_psuredundancy admin
+# @restrict cmd_psuredundancy admin
+# @doc cmd_psuredundancy
+# Control Power Supply Redundancy behaviour
+#  enable
+#  disable
+#  show
+function cmd_psuredundancy {
+  if [[ $# -le 0 ]]; then
+    print_help cmd_psuredundancy
+    return 1
+  fi
+  local action="show"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      enable|disable|show)
+            action="$1"
+            ;;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  if [ "${action}" == show ]; then
+    if busctl get-property ${SETTINGS_SERVICE} \
+                           ${PSU_REDUNDANCY_OBJECT} \
+                           ${PSU_REDUNDANCY_IFACE} \
+                           ${PSU_REDUNDANCY_PROPERTY}  | grep -q true
+    then
+      echo "Enabled"
+    else
+      echo "Disabled"
+    fi
+  elif [ "${action}" == enable ]; then
+    busctl set-property ${SETTINGS_SERVICE} \
+                        ${PSU_REDUNDANCY_OBJECT} \
+                        ${PSU_REDUNDANCY_IFACE} \
+                        ${PSU_REDUNDANCY_PROPERTY} b true
+  elif [ "${action}" == disable ]; then
+    busctl set-property ${SETTINGS_SERVICE} \
+                        ${PSU_REDUNDANCY_OBJECT} \
+                        ${PSU_REDUNDANCY_IFACE} \
+                        ${PSU_REDUNDANCY_PROPERTY} b false
+  fi
+
 }
