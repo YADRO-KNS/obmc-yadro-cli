@@ -205,7 +205,7 @@ function cmd_virtualmedia_mount {
 # @restrict cmd_virtualmedia_umount admin
 # @doc cmd_virtualmedia_umount
 # Unmount the virtual media
-#  -y, --yes  - does not ask for interactive confirmation
+#  -y, --yes  - do not ask for interactive confirmation
 function cmd_virtualmedia_umount {
   local yes=""
 
@@ -222,6 +222,71 @@ function cmd_virtualmedia_umount {
   fi
 
   usb-ctrl eject "usb.ms.cli"
+}
+
+
+# @sudo cmd_config admin,operator,user
+# @doc cmd_config
+# Host configuration
+function cmd_config {
+  subcommand "$@"
+}
+
+# Helper functions for cmd_config_default
+function config_default_set {
+  local yes="${1-}"
+
+  echo "Host BIOS settings will be reset to default on next boot."
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  ipmitool chassis bootdev none clear-cmos=yes >/dev/null
+}
+
+function config_default_cancel {
+  local yes="${1-}"
+
+  echo "Cancel reset to default host settings on next boot."
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  busctl set-property xyz.openbmc_project.Settings \
+         /xyz/openbmc_project/control/host0/boot/one_time \
+         xyz.openbmc_project.Control.Boot.ClearCmos ClearCmos b false
+}
+
+function config_default_status {
+  expect_noarg "$@"
+  if (ipmitool chassis bootparam get 5 | grep -i 'CMOS Clear'>/dev/null); then
+    echo "BIOS settings will be RESET to defaults on next boot"
+  else
+    echo "BIOS settings will NOT be reset to defaults"
+  fi
+}
+
+# @sudo cmd_config_default admin
+# @restrict cmd_config_default admin
+# @doc cmd_config_default
+# Reset UEFI BIOS configuration to defaults on the next boot or cancel that request
+#  --cancel  - Cancel the settings reset request if it hasn't been processed yet
+#  --status  - Show the status of the settings reset request
+#  -y, --yes - Do not ask for interactive confirmation
+function cmd_config_default {
+  local yes=""
+  local action="set"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --cancel) action="cancel";;
+      --status) action="status";;
+      -y | --yes) yes="-y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  config_default_${action} ${yes}
 }
 
 # @sudo cmd_console admin,operator,user
