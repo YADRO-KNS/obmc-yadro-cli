@@ -236,3 +236,20 @@ If connected via SSH, add extra ~ characters, one per SSH connection.
 EOF
   exec obmc-console-client
 }
+
+# @sudo cmd_config admin
+# @restrict cmd_config admin
+# @doc cmd_config
+ # Host configuration
+function cmd_config {
+  subcommand "$@"
+}
+
+# @sudo cmd_config_pcie admin
+# @restrict cmd_config_pcie admin
+# @doc cmd_config_pcie
+# Configure PCIe bifurcation
+function cmd_config_pcie {
+  host-pcie-cfg "$@"
+}
+
