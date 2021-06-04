@@ -72,8 +72,8 @@ function cmd_power_on {
 # @restrict cmd_power_off admin,operator
 # @doc cmd_power_off
 # Turn the host off
-#  -f, --force     Forced shutdown
-#  -y, --yes       Do not ask for confirmation
+#   -f, --force - Forced shutdown
+#   -y, --yes   - Do not ask for confirmation
 function cmd_power_off {
   local force=""
   local yes=""
@@ -107,7 +107,7 @@ function cmd_power_off {
 # @restrict cmd_power_reboot admin,operator
 # @doc cmd_power_reboot
 # Performs host reboot
-#   -y, --yes  Do not ask for confirmation
+#   -y, --yes - Do not ask for confirmation
 function cmd_power_reboot {
   local yes=""
   while [[ $# -gt 0 ]]; do
@@ -138,8 +138,8 @@ function cmd_power_status {
 ## @restrict cmd_power_capping admin
 ## @doc cmd_power_capping
 ## Configure power capping
-##   -d, --disable       Disable power capping
-##   -e, --enable WATTS  Enable power capping
+##   -d, --disable      - Disable power capping
+##   -e, --enable WATTS - Enable power capping
 #function cmd_power_capping {
 #  not implemented
 #}
@@ -162,11 +162,11 @@ function cmd_virtualmedia {
 # @restrict cmd_virtualmedia_mount admin
 # @doc cmd_virtualmedia_mount
 # Mount a virtual media
-#  --usb    - the USB interface type
-#  --usb-ro - the USB interface type (read-only)
-#  --hdd    - the HDD interface type
-#  --cdrom  - the CD/DVD/BD-ROM interface type (read-only), based on file size
-#  FILE — path to image file
+#   --usb    - The USB interface type
+#   --usb-ro - The USB interface type (read-only)
+#   --hdd    - The HDD interface type
+#   --cdrom  - The CD/DVD/BD-ROM interface type (read-only), based on file size
+#   FILE     - Path to image file
 function cmd_virtualmedia_mount {
   local imagefile=""
   local type=""
@@ -205,7 +205,7 @@ function cmd_virtualmedia_mount {
 # @restrict cmd_virtualmedia_umount admin
 # @doc cmd_virtualmedia_umount
 # Unmount the virtual media
-#  -y, --yes  - do not ask for interactive confirmation
+#   -y, --yes - Do not ask for confirmation
 function cmd_virtualmedia_umount {
   local yes=""
 
@@ -272,7 +272,7 @@ function config_default_status {
 # Reset UEFI BIOS configuration to defaults on the next boot or cancel that request
 #  --cancel  - Cancel the settings reset request if it hasn't been processed yet
 #  --status  - Show the status of the settings reset request
-#  -y, --yes - Do not ask for interactive confirmation
+#  -y, --yes - Do not ask for confirmation
 function cmd_config_default {
   local yes=""
   local action="set"

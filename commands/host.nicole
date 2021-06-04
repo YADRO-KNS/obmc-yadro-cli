@@ -82,8 +82,8 @@ function cmd_power_on {
 # @restrict cmd_power_off admin,operator
 # @doc cmd_power_off
 # Turn the host off
-#  -f, --forced    Forced shutdown
-#  -y, --yes       Do not ask for confirmation
+#   -f, --forced - Forced shutdown
+#   -y, --yes    - Do not ask for confirmation
 function cmd_power_off {
   local force=""
   local yes=""
@@ -135,8 +135,8 @@ function cmd_power_status {
 ## @restrict cmd_power_capping admin
 ## @doc cmd_power_capping
 ## Configure power capping
-##   -d, --disable       Disable power capping
-##   -e, --enable WATTS  Enable power capping
+##   -d, --disable      - Disable power capping
+##   -e, --enable WATTS - Enable power capping
 #function cmd_power_capping {
 #  not implemented
 #}
@@ -210,7 +210,7 @@ function nmi_nicole {
 # @restrict cmd_nmi admin
 # @doc cmd_nmi
 # Send NMI signal to host to dump the hanged kernel
-#  -y, --yes       Do not ask for confirmation
+#   -y, --yes - Do not ask for confirmation
 function cmd_nmi {
   local yes=""
   while [[ $# -gt 0 ]]; do
@@ -248,9 +248,9 @@ function cmd_nmi {
 ## @restrict cmd_virtualmedia_mount admin
 ## @doc cmd_virtualmedia_mount
 ## Mount a virtual media
-##  -p, --path <location> — path to image file
-##  -u, --user <username> — username to access the share
-##  -r, --readonly — mount virtual media in read-only mode
+##   -p, --path <location> - Path to image file
+##   -u, --user <username> - Username to access the share
+##   -r, --readonly        - Mount virtual media in read-only mode
 #function cmd_virtualmedia_mount {
 #  not implemented
 #}
