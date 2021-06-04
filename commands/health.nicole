@@ -47,7 +47,7 @@ function cmd_logs_list {
 # @sudo cmd_logs_show admin,operator,user
 # @doc cmd_logs_show
 # Show the selected system log
-#  LOG    The name of the log to show (see 'health logs list')
+#   LOG - The name of the log to show (see 'health logs list')
 function cmd_logs_show {
   if [[ $# -ne 1 ]]; then
     abort_badarg "Expected exactly 1 argument"
@@ -108,7 +108,7 @@ function cmd_logs_clear {
 # @restrict cmd_sel admin,operator
 # @doc cmd_sel
 # Decode eSEL
-#  ID    Shown eSEL record with specified ID
+#   ID - Shown eSEL record with the specified ID
 function cmd_sel {
   local sel_id=""
   if [[ $# -gt 0 ]]; then

@@ -48,7 +48,7 @@ function cmd_logs_list {
 # @restrict cmd_logs_show admin,operator,user
 # @doc cmd_logs_show
 # Show the selected system log
-#  LOG    The name of the log to show (see 'health logs list')
+#   LOG - The name of the log to show (see 'health logs list')
 function cmd_logs_show {
   if [[ $# -ne 1 ]]; then
     abort_badarg "Expected exactly 1 argument"
