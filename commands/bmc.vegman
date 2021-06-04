@@ -152,14 +152,45 @@ function cmd_datetime_method {
 # Set system time manually
 #   YYYY-MM-DD-HH-mm-SS - Date and time to set
 function cmd_datetime_set {
+  local datestr="${1-}"
+
   # Only check format here, values are checked for sanity by `date`
-  if ! [[ ${1:-} =~ ^[0-9]{4}(-[0-9]{2}){5}$ ]]; then
+  if ! [[ "${datestr}" =~ ^[0-9]{4}(-[0-9]{2}){5}$ ]]; then
     echo "Please enter date and time in YYYY-MM-DD-HH-mm-SS format" >&2
     return 1
   fi
 
-  local new_date="${1:0:10}"
-  local new_time="${1:11}"
+  local YY
+  local MM
+  local DD
+  local HH
+  local mm
+  local SS
+  IFS='-' read YY MM DD HH mm SS < <(echo ${datestr})
+
+  # Problem Y2k38 isn't resolved in OpenBMC yet
+  if [[ $YY -lt 2021 ]] || [[ $YY -gt 2037 ]]; then
+    echo "The year must be 2021..2037"
+    return 1
+  fi
+
+  local -a mdays=(0 31 28 31 30 31 30 31 31 30 31 30 31)
+  if [[ $((YY % 4)) -eq 0 ]]; then
+    # Leap year
+    mdays[2]=29
+  fi
+
+  if [[ $MM -gt 12 ]] || \
+     [[ $DD -gt ${mdays[$MM]} ]] || \
+     [[ $HH -gt 23 ]] || \
+     [[ $mm -gt 59 ]] || \
+     [[ $SS -gt 59 ]]; then
+    echo "The provided date contains out of range values"
+    return 1
+  fi
+
+  local new_date="${datestr:0:10}"
+  local new_time="${datestr:11}"
   date "${new_date} ${new_time//-/:}"
 
   echo "System time is updated."
