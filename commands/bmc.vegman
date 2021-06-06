@@ -220,13 +220,13 @@ function cmd_datetime_show {
 # Configure NTP server connection
 function cmd_datetime_ntpconfig {
   if [[ $# -ge 1 && $1 =~ ^-*h(elp)?$ ]]; then
-    exec_tool netconfig --cli help ntp
+    exec_tool netconfig --cli-hide-cmd help ntp
     return
   fi
   if [[ $# -lt 3 ]]; then
     abort_badarg "Expected 3 or more arguments"
   fi
-  exec_tool netconfig --cli ntp "$@"
+  exec_tool netconfig --cli-hide-cmd ntp "$@"
 }
 
 # @sudo cmd_ifconfig admin
