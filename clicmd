@@ -189,6 +189,8 @@ function print_help {
 function autocomplete {
   local parent="cmd"
   while [[ $# -gt 0 ]]; do
+    # Only alphanumeric subcommands are possible
+    [[ $1 =~ ^[[:alnum:]]+$ ]] || break 
     parent+="_$1"
     shift
   done

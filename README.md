@@ -50,3 +50,43 @@ Example: `@sudo cmd_reboot admin,operator`
 ### Function documentation
 All public functions must have at least a brief description. A documentation
 block starts with tag `@doc NAME` and ends at the function declaration line.
+
+When describing the command arguments, please follow this template:
+
+```
+# @doc cmd_somecommand
+# The brief one-line description. Help handled by the command function.
+# 
+# Or there can be other lines with more detailed descripton, but then
+# the -h/--help/help arguments to the function will be processed by clicmd
+# itself and the all this text will be displayed to the user.
+# 
+#   -o, --option - The short and long option description
+#   --another    - Another option description that may be very long and span
+#                  multiple lines. The lines (incuding # and the leading space
+#                  must not exceed 80 characters). There must be no dot at
+#                  the end of the last sentence
+#  --param VALUE - Decription of some parameter 'param' that takes an argument
+#                  called VALUE
+#  parameter     - Description of some literal all-lowercase parameter name
+#  VALUE         - Description of some parameter, the value of which must
+#                  be specified instead of the all-caps word VALUE
+#  REPEATED...   - Description of some entity whose value can be specified
+#                  multiple times (space separation assumed)
+```
+
+Please note that:
+
+- There is a two-space indent for all options and parameters relative to
+  the description;
+- If there is just a one-line brief description, then there must be no
+  dot at the end of the last sentence;
+- If there is just a one-line brief description, then there must be no
+  empty line after it;
+- There must be a space-dash-space (` - `) separator after the longest
+  option/argument before the description of that argument;
+- All the other option/argument descriptions must be aligned to the
+  description of the longest option/argument;
+- No line shall exceed 80 characters (including the leading `# `).
+   
+

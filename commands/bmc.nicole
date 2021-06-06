@@ -42,8 +42,8 @@ function cmd_info {
 
 # @doc cmd_info_uptime
 # Show BMC uptime
-#   -c, --compact   Show last boot time in compact format
-#   -u, --utc       Show last boot time in UTC timezone
+#   -c, --compact - Show last boot time in compact format
+#   -u, --utc     - Show last boot time in UTC timezone
 function cmd_info_uptime {
   local compact=""
   local utc=""
@@ -72,8 +72,8 @@ function cmd_info_uptime {
 # @sudo cmd_info_version admin,operator,user
 # @doc cmd_info_version
 # Show version of BMC and BIOS/UEFI
-#   -b, --bmc   Show BMC version
-#   -o, --opfw  Show OpenPOWER Firmware version
+#   -b, --bmc  - Show BMC version
+#   -o, --opfw - Show OpenPOWER Firmware version
 function cmd_info_version {
   # If no options are given, show everything
   [[ $# -eq 0 ]] && set -- -b -o
@@ -106,7 +106,7 @@ function cmd_datetime {
 # @restrict cmd_datetime_method admin
 # @doc cmd_datetime_method
 # Change time synchronization method
-#  {manual|ntp}
+#   {manual|ntp} - The synchronization method to use
 function cmd_datetime_method {
   local method
   method=$(busctl get-property ${SETTINGS_SERVICE} \
@@ -150,16 +150,47 @@ function cmd_datetime_method {
 # @restrict cmd_datetime_set admin
 # @doc cmd_datetime_set
 # Set system time manually
-#   YYYY-MM-DD-HH-mm-SS   Time to set
+#   YYYY-MM-DD-HH-mm-SS - Date and time to set
 function cmd_datetime_set {
+  local datestr="${1-}"
+
   # Only check format here, values are checked for sanity by `date`
-  if ! [[ ${1:-} =~ ^[0-9]{4}(-[0-9]{2}){5}$ ]]; then
+  if ! [[ "${datestr}" =~ ^[0-9]{4}(-[0-9]{2}){5}$ ]]; then
     echo "Please enter date and time in YYYY-MM-DD-HH-mm-SS format" >&2
     return 1
   fi
 
-  local new_date="${1:0:10}"
-  local new_time="${1:11}"
+  local YY
+  local MM
+  local DD
+  local HH
+  local mm
+  local SS
+  IFS='-' read YY MM DD HH mm SS < <(echo ${datestr})
+
+  # Problem Y2k38 isn't resolved in OpenBMC yet
+  if [[ $YY -lt 2021 ]] || [[ $YY -gt 2037 ]]; then
+    echo "The year must be 2021..2037"
+    return 1
+  fi
+
+  local -a mdays=(0 31 28 31 30 31 30 31 31 30 31 30 31)
+  if [[ $((YY % 4)) -eq 0 ]]; then
+    # Leap year
+    mdays[2]=29
+  fi
+
+  if [[ $MM -gt 12 ]] || \
+     [[ $DD -gt ${mdays[$MM]} ]] || \
+     [[ $HH -gt 23 ]] || \
+     [[ $mm -gt 59 ]] || \
+     [[ $SS -gt 59 ]]; then
+    echo "The provided date contains out of range values"
+    return 1
+  fi
+
+  local new_date="${datestr:0:10}"
+  local new_time="${datestr:11}"
   date "${new_date} ${new_time//-/:}"
 
   echo "System time is updated."
@@ -167,8 +198,8 @@ function cmd_datetime_set {
 
 # @doc cmd_datetime_show
 # Show system time
-#   -c, --compact   Show last boot time in compact format
-#   -u, --utc       Show last boot time in UTC timezone
+#   -c, --compact - Show last boot time in compact format
+#   -u, --utc     - Show last boot time in UTC timezone
 function cmd_datetime_show {
   local compact=""
   local utc=""
@@ -187,7 +218,7 @@ function cmd_datetime_show {
 # @restrict cmd_datetime_ntpconfig admin
 # @doc cmd_datetime_ntpconfig
 # Configure NTP server connection
-#  {add|del} ADDR [ADDR..]
+#   {add|del} ADDR [ADDR..]
 function cmd_datetime_ntpconfig {
   if [[ $# -lt 2 ]]; then
     abort_badarg "Expected 2 or more arguments"
@@ -212,7 +243,7 @@ function cmd_syslog {
 
 # @sudo cmd_syslog_show admin
 # @doc cmd_syslog_show
-# Show actual remote syslog server
+# Show the configured remote syslog server
 function cmd_syslog_show {
     local addr
     addr=$(busctl get-property ${SYSLOG_CONFIG_SERVICE} \
@@ -245,8 +276,8 @@ function cmd_syslog_show {
 # @restrict cmd_syslog_set admin
 # @doc cmd_syslog_set
 # Configure remote syslog server
-#  address[:port] - to change settings
-#  empty - to reset settings
+#   ADDRESS[:PORT] - To change settings
+# Do not specify any arguments to clear the settings
 function cmd_syslog_set {
     local remote_point=${1:-}
     local address=${remote_point%:*}
@@ -291,7 +322,7 @@ function cmd_config {
 # @restrict cmd_config_backup admin
 # @doc cmd_config_backup
 # Backup the BMC configuration to a file
-#   FILE    backup file
+#   FILE - The backup file to use
 function cmd_config_backup {
   if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
     echo "File name is not specified" >&2
@@ -304,7 +335,7 @@ function cmd_config_backup {
 # @restrict cmd_config_restore admin
 # @doc cmd_config_restore
 # Restore the BMC configuration from a file
-#   FILE    backup file
+#   FILE - The backup file to use
 function cmd_config_restore {
   if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
     echo "File name is not specified" >&2
@@ -317,7 +348,7 @@ function cmd_config_restore {
 # @restrict cmd_config_default admin
 # @doc cmd_config_default
 # Restore the factory default BMC config
-#  -k, --keepipconfig   Keep network settings
+#   -k, --keepipconfig - Keep network settings
 function cmd_config_default {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -342,9 +373,9 @@ function cmd_update {
 # @restrict cmd_update_start admin
 # @doc cmd_update_start
 # Update BMC and BIOS.
-#  -c, --clearcfg  Reset BMC settings to manufacture defaults
-#  -y, --yes       Do not ask for confirmation
-#  FILE            Firmware archive to install
+#   -c, --clearcfg - Reset BMC settings to manufacture defaults
+#   -y, --yes      - Do not ask for confirmation
+#   FILE           - Firmware archive to install
 function cmd_update_start {
   local fwfile=""
   local reset=""
@@ -393,8 +424,8 @@ function cmd_update_start {
 # @restrict cmd_reboot admin
 # @doc cmd_reboot
 # Reboot the BMC
-#  -f, --force     Forced BMC reboot
-#  -y, --yes       Do not ask for confirmation
+#   -f, --force - Forced BMC reboot
+#   -y, --yes   - Do not ask for confirmation
 function cmd_reboot {
   local force=""
   local yes=""

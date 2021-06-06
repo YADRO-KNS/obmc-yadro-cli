@@ -34,8 +34,8 @@ function cmd_myrole {
 # @restrict cmd_create admin
 # @doc cmd_create
 # Create a new user
-#   -n, --name NAME   User name
-#   -r, --role ROLE   Role for user (admin, operator or user)
+#   -n, --name NAME - User name
+#   -r, --role ROLE - Role for user (admin, operator or user)
 function cmd_create {
   local name=""
   local role="${ROLE_USER}"
@@ -81,7 +81,7 @@ function cmd_create {
 # @restrict cmd_show admin
 # @doc cmd_show
 # Show specific user
-#   USERNAME...    Show user with specific name (multiple names can be added)
+#   USERNAME... - Show user with specific name (multiple names can be added)
 function cmd_show {
   while [[ $# -gt 0 ]]; do
     local user="$1"
@@ -116,8 +116,8 @@ function cmd_list {
 # @restrict cmd_delete admin
 # @doc cmd_delete
 # Delete users
-#   -y, --yes       Do not ask for confirmation
-#   USERNAME...     User account name (multiple names can be added).
+#   -y, --yes   - Do not ask for confirmation
+#   USERNAME... - User account name (multiple names can be added)
 function cmd_delete {
   local yes=""
   local names=()
@@ -170,7 +170,7 @@ function cmd_set {
 # @restrict cmd_set_password admin
 # @doc cmd_set_password
 # Update user password
-#   USERNAME    User account name
+#   USERNAME - User account name
 function cmd_set_password {
   if [[ $# -eq 0 ]] || [[ -z "$1" ]]; then
     echo "User name is not specified" >&2
@@ -195,8 +195,8 @@ function cmd_set_mypassword {
 # @restrict cmd_set_role admin
 # @doc cmd_set_role
 # Update user role
-#   -n, --name NAME   User name
-#   -r, --role ROLE   Role for user (admin, operator or user)
+#   -n, --name NAME - User name
+#   -r, --role ROLE - Role for user (admin, operator or user)
 function cmd_set_role {
   local name=""
   local role=""
