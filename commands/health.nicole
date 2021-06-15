@@ -100,7 +100,16 @@ function cmd_logs_clear {
   expect_noarg "$@"
   echo "All logs will be cleared, this event will be recorded to blank audit log."
   confirm
-  journalctl --vacuum-time=1s
+
+  rm -fr /var/lib/obmc/hostlogs/host_*.log.gz
+  :> /var/log/obmc-console.log
+
+  busctl call xyz.openbmc_project.Logging /xyz/openbmc_project/logging \
+              xyz.openbmc_project.Collection.DeleteAll DeleteAll
+  busctl call xyz.openbmc_project.Dump.Manager /xyz/openbmc_project/dump \
+              xyz.openbmc_project.Collection.DeleteAll DeleteAll
+
+  journalctl --rotate --vacuum-time=1s
   echo "All logs are cleared."
 }
 
