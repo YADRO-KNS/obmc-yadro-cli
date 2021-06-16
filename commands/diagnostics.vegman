@@ -10,14 +10,33 @@
 
 # D-Bus object descriptions to manage the LED
 LED_DBUS_SERVICE="xyz.openbmc_project.LED.GroupManager"
-LED_DBUS_OBJECT="/xyz/openbmc_project/led/groups/enclosure_identify"
+LED_DBUS_PATH="/xyz/openbmc_project/led/groups"
 LED_DBUS_INTERFACE="xyz.openbmc_project.Led.Group"
 LED_DBUS_PROPERTY="Asserted"
+
+ID_LED_BLINKING="enclosure_identify_blink"
+ID_LED_ON="enclosure_identify"
 
 # @doc cmd_led
 # Operations with identification LED
 function cmd_led {
   subcommand "$@"
+}
+
+get_led_state() {
+    local name=$1
+    busctl get-property ${LED_DBUS_SERVICE} "${LED_DBUS_PATH}/${name}" \
+                        ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
+                        | awk '{print $NF}' 2>/dev/null
+}
+
+set_led_state() {
+    local name=$1
+    local state=$2
+
+    busctl set-property ${LED_DBUS_SERVICE} "${LED_DBUS_PATH}/${name}" \
+                        ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
+                        b "${state}" 2>/dev/null
 }
 
 # @sudo cmd_led_status admin,operator,user
@@ -31,9 +50,15 @@ function cmd_led {
 function cmd_led_status {
   expect_noarg "$@"
   local state
-  state=$(busctl get-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
-                              ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                              | awk '{print $NF}')
+
+  state=$(get_led_state ${ID_LED_BLINKING} || :)
+
+  # `enclosure_identify` has no sense while `enclosure_identify_blink` is
+  # asserted.
+  if [[ "${state}" != "true" ]]; then
+    state=$(get_led_state ${ID_LED_ON} || :)
+  fi
+
   case "${state}" in
     true) state="ON";;
     false) state="OFF";;
@@ -48,9 +73,9 @@ function cmd_led_status {
 # Turn the identification LED on
 function cmd_led_on {
   expect_noarg "$@"
-  busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
-                      ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                      b true
+
+  set_led_state ${ID_LED_BLINKING} false ||:
+  set_led_state ${ID_LED_ON} true
 
   # cmd_led_status takes no arguments, silience shellcheck about it
   # shellcheck disable=SC2119
@@ -63,9 +88,9 @@ function cmd_led_on {
 # Turn the identification LED off
 function cmd_led_off {
   expect_noarg "$@"
-  busctl set-property ${LED_DBUS_SERVICE} ${LED_DBUS_OBJECT} \
-                      ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                      b false
+  set_led_state ${ID_LED_BLINKING} false ||:
+  set_led_state ${ID_LED_ON} false
+
   # cmd_led_status takes no arguments, silience shellcheck about it
   # shellcheck disable=SC2119
   cmd_led_status
