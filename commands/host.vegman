@@ -289,6 +289,34 @@ function cmd_config_default {
   config_default_${action} ${yes}
 }
 
+# @sudo cmd_nmi admin
+# @restrict cmd_nmi admin
+# @doc cmd_nmi
+# Emit an NMI to the host
+#   -y, --yes - Do not ask for confirmation
+function cmd_nmi {
+  local yes=""
+
+  while [[ $# -gt 0 ]]; do
+    case "${1}" in
+      -y | --yes) yes="y";;
+      *) abort_badarg "${1}";;
+    esac
+    shift
+  done
+
+  echo "An NMI signal will be now sent to the host."
+  echo "That may cause host OS crash an reboot if configured so."
+
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  busctl set-property xyz.openbmc_project.Settings \
+         /xyz/openbmc_project/Chassis/Control/NMISource \
+         xyz.openbmc_project.Chassis.Control.NMISource Enabled b true
+}
+
 # @sudo cmd_console admin,operator,user
 # @doc cmd_console
 # Open virtual console
