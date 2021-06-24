@@ -158,25 +158,66 @@ function cmd_virtualmedia {
   subcommand "$@"
 }
 
+# @sudo cmd_virtualmedia_status admin
+# @restrict cmd_virtualmedia_status admin
+# @doc cmd_virtualmedia_status
+# Get the status of virtual media
+function cmd_virtualmedia_status {
+  local -a usb_status_metadata=( "USB0;Proxy" "USB1;Legacy" )
+
+  for usb_item_metadata in "${usb_status_metadata[@]}"
+  do
+    local id="${usb_item_metadata%%;*}"
+    local vm_type="${usb_item_metadata##*;}"
+    local usb_status=$(busctl get-property xyz.openbmc_project.VirtualMedia \
+                                        /xyz/openbmc_project/VirtualMedia/${vm_type}/${id} \
+                                        xyz.openbmc_project.VirtualMedia.Process Active)
+    local image=""
+    echo -ne "Virtual Media ($id) status: "
+    if [ "$usb_status" == "b true" ]; then
+      echo "mounted"
+      image=$(busctl get-property  xyz.openbmc_project.VirtualMedia \
+                                  /xyz/openbmc_project/VirtualMedia/${vm_type}/${id} \
+                                  xyz.openbmc_project.VirtualMedia.MountPoint ImageURL)
+      image=${image#*\"}
+      echo "Image: ${image%\"*}"
+    else
+      echo "unmounted"
+    fi
+
+  done
+}
+
 # @sudo cmd_virtualmedia_mount admin
 # @restrict cmd_virtualmedia_mount admin
 # @doc cmd_virtualmedia_mount
 # Mount a virtual media
-#   --usb    - The USB interface type
-#   --usb-ro - The USB interface type (read-only)
-#   --hdd    - The HDD interface type
-#   --cdrom  - The CD/DVD/BD-ROM interface type (read-only), based on file size
-#   FILE     - Path to image file
+#   --usb      - The USB interface type
+#   --usb-ro   - The USB interface type (read-only)
+#   --hdd      - The HDD interface type
+#   --cdrom    - The CD/DVD/BD-ROM interface type (read-only), based on file size
+#   FILE       - Path to image file. Supported the SMB and the HTTPS protocols.
+#  -r          - Readonly mode
+#  -u username - Username credential to connect SMB or HTTPS remote server.
+#  -p          - Request to input the password credential to connect SMB or HTTPS remote server.
 function cmd_virtualmedia_mount {
   local imagefile=""
-  local type=""
-
+  local type=0
+  local readonly=false
+  local username=""
+  local password=""
+  local imagefile_pattern="^(https|smb)"
+  local cred_pipe=0
   while [[ $# -gt 0 ]]; do
     case "${1}" in
-      --usb) type="usb";;
-      --usb-ro) type="usb-ro";;
-      --hdd) type="hdd";;
-      --cdrom) type="cdrom";;
+      --usb) type=0;;
+      --usb-ro) type=0;;
+      --hdd) type=1;;
+      --cdrom) type=2;;
+      -r) readonly=true;;
+      -u) username="${2}"
+          shift;;
+      -p) read -ers -p "Type password:" password;;
       *)
         if [[ -n "${imagefile}" ]]; then
           abort_badarg "${1}"
@@ -193,35 +234,74 @@ function cmd_virtualmedia_mount {
     return 1
   fi
 
-  if [[ ! -e ${imagefile} ]] || [[ -d ${imagefile} ]]; then
-    echo "Please specify the path to image file" >&2
+  if ! [[ ${imagefile} =~ ${imagefile_pattern} ]]; then
+    echo "Please specify a valid path to the image file" >&2
     return 1
   fi
 
-  usb-ctrl insert "usb.ms.cli" "${imagefile}" "${type}"
+  if [[ ! -z ${username} ]] || [[ ! -z ${password} ]]
+  then
+    local cred_pipe_fifo=$(mktemp -u)
+    mkfifo $cred_pipe_fifo
+    exec {cred_pipe}<>${cred_pipe_fifo}
+    rm $cred_pipe_fifo
+
+    printf "%s\0%s\0\n" "${username:0:64}" "${password:0:64}" >&{cred_pipe}
+  fi
+
+  busctl call xyz.openbmc_project.VirtualMedia \
+    /xyz/openbmc_project/VirtualMedia/Legacy/USB1 \
+    xyz.openbmc_project.VirtualMedia.Legacy \
+    Mount sbyv "$imagefile" $readonly ${type} i ${cred_pipe} > /dev/null  && \
+  echo "Virtual Media (USB1) mounted" || \
+  echo "Failed to mount Virtual Media (USB1)"
+
+  if [[ ${cred_pipe} -ne 0 ]]; then
+    exec {cred_pipe}>&-
+  fi
 }
 
 # @sudo cmd_virtualmedia_umount admin
 # @restrict cmd_virtualmedia_umount admin
 # @doc cmd_virtualmedia_umount
 # Unmount the virtual media
+#   MEDIA     - Virtual Media Device name to unmount (USB0 or USB1)
 #   -y, --yes - Do not ask for confirmation
 function cmd_virtualmedia_umount {
   local yes=""
-
+  local media=""
+  local dbus_vm_type=""
   while [[ $# -gt 0 ]]; do
     case "${1}" in
       -y | --yes) yes="y";;
-      *) abort_badarg "${1}";;
+      *)
+        if [[ -n "${media}" ]]; then
+          abort_badarg "${1}"
+        else
+          media="${1}"
+        fi
     esac
     shift
   done
+  if [[ "${media}" == "USB0" ]]
+  then
+    dbus_vm_type="Proxy"
+  elif [[ "${media}" == "USB1" ]]
+  then
+    dbus_vm_type="Legacy"
+  else
+    abort_badarg "${media}"
+  fi
 
   if [[ -z "${yes}" ]]; then
     confirm
   fi
 
-  usb-ctrl eject "usb.ms.cli"
+  busctl call xyz.openbmc_project.VirtualMedia \
+    "/xyz/openbmc_project/VirtualMedia/${dbus_vm_type}/${media}" \
+    "xyz.openbmc_project.VirtualMedia.${dbus_vm_type}" Unmount &>2 && \
+  echo "Virtual Media (${media}) unmounted" || \
+  echo "Failed to unmount Virtual Media (${media})"
 }
 
 
