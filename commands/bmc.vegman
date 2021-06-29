@@ -106,7 +106,7 @@ function cmd_datetime {
 # @restrict cmd_datetime_method admin
 # @doc cmd_datetime_method
 # Change time synchronization method
-#   {manual|ntp} - The synchronization method to use
+#   {host|ntp} - The synchronization method to use
 function cmd_datetime_method {
   local method
   method=$(busctl get-property ${SETTINGS_SERVICE} \
@@ -117,10 +117,11 @@ function cmd_datetime_method {
   method=${method%\"*}
 
   if [[ $# -eq 0 ]]; then
-      echo "Current time synchronization method is ${method}"
+      # VEGMAN doesn't have RTC and in manual mode it uses PCH time.
+      echo "Current time synchronization method is ${method/Manual/Host}"
   else
-    case "${1}" in
-      [Mm][Aa][Nn][Uu][Aa][Ll])
+    case "${1,,}" in
+      host)
         if [[ ${method} != "Manual" ]]; then
           busctl set-property --timeout=60 ${SETTINGS_SERVICE} \
                               ${TIMESYNC_METHOD_PATH} \
@@ -130,7 +131,7 @@ function cmd_datetime_method {
         fi
         ;;
 
-      [Nn][Tt][Pp])
+      ntp)
         if [[ ${method} != "NTP" ]]; then
           busctl set-property --timeout=60 ${SETTINGS_SERVICE} \
                               ${TIMESYNC_METHOD_PATH} \
@@ -140,7 +141,7 @@ function cmd_datetime_method {
         fi
         ;;
       *)
-        abort_badarg "Unsupported method specified. Expected manual or ntp."
+        abort_badarg "Unsupported method specified. Expected host or ntp."
         ;;
     esac
   fi
