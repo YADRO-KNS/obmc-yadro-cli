@@ -192,14 +192,14 @@ function cmd_virtualmedia_status {
 # @restrict cmd_virtualmedia_mount admin
 # @doc cmd_virtualmedia_mount
 # Mount a virtual media
-#   --usb      - The USB interface type
-#   --usb-ro   - The USB interface type (read-only)
-#   --hdd      - The HDD interface type
-#   --cdrom    - The CD/DVD/BD-ROM interface type (read-only), based on file size
-#   FILE       - Path to image file. Supported the SMB and the HTTP(S) protocols.
-#  -r          - Readonly mode
-#  -u username - Username credential to connect SMB or HTTP(S) remote server.
-#  -p          - Request to input the password credential to connect SMB or HTTP(S) remote server.
+#   --usb       - The USB interface type
+#   --usb-ro    - The USB interface type (read-only)
+#   --hdd       - The HDD interface type
+#   --cdrom     - The CD/DVD/BD-ROM interface type (read-only), based on file size
+#   FILE        - Path to image file. Supported the SMB and the HTTP(S) protocols.
+#   -r          - Readonly mode
+#   -u USER     - Username credential to connect SMB or HTTP(S) remote server.
+#   -p          - Request to input the password credential to connect SMB or HTTP(S) remote server.
 function cmd_virtualmedia_mount {
   local imagefile=""
   local type=0
