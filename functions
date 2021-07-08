@@ -25,7 +25,14 @@ function add_copy_file()
     if [[ -f $file_name ]]; then
       cat "$file_name"
     elif [[ -d $file_name ]]; then
-      zcat "$file_name"/*.gz
+      if compgen -G "$file_name/host_*.log.gz" &>/dev/null; then
+        zcat "$file_name"/host_*.log.gz
+      elif compgen -G "$file_name/system*.journal" &>/dev/null; then
+        echo "Journald raw files are binary and cannot be displayed!"
+        echo "Usage 'health log show journalpretty' instead"
+      else
+        echo "Nothing to display!"
+      fi
     else
       echo "Not a log: ${file_name}"
     fi
