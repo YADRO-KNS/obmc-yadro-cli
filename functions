@@ -29,7 +29,7 @@ function add_copy_file()
         zcat "$file_name"/host_*.log.gz
       elif compgen -G "$file_name/system*.journal" &>/dev/null; then
         echo "Journald raw files are binary and cannot be displayed!"
-        echo "Usage 'health log show journalpretty' instead"
+        echo "Use 'health log show journalpretty' instead"
       else
         echo "Nothing to display!"
       fi
