@@ -105,6 +105,8 @@ function cmd_logs_clear {
 
   rm -fr /var/lib/obmc/hostlogs/host_*.log.gz
 
+  journalctl --rotate --vacuum-time=1s
+
   local truncating=(
     /var/log/ipmi_sel
     /var/log/redfish
@@ -113,8 +115,6 @@ function cmd_logs_clear {
   for logfile in "${truncating[@]}"; do
     :> "${logfile}"
   done
-
-  journalctl --rotate --vacuum-time=1s
 
   echo "All logs are cleared."
 }
