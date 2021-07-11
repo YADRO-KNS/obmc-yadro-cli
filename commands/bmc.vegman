@@ -78,8 +78,8 @@ function cmd_info_version {
   # If no options are given, show everything
   [[ $# -eq 0 ]] && set -- -b -u
 
-  local bmc_match='^BMC '
-  local host_match='^Host '
+  local bmc_match='^BMC .*bmc_active\]$'
+  local host_match='^Host .*bios_active\]$'
   local no_match='no-match-pattern'
   local bmc=${no_match}
   local host=${no_match}
@@ -93,7 +93,9 @@ function cmd_info_version {
     shift
   done
 
-  exec_tool fwupdate --version | grep -E "(${bmc}|${host})"
+  exec_tool fwupdate --version | \
+    awk -v re="(${bmc}|${host})" \
+      '$0 ~ re { printf "%-8s %s\n", $1, $2 }'
 }
 
 # @doc cmd_datetime
