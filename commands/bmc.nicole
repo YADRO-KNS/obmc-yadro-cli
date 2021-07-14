@@ -266,7 +266,7 @@ function cmd_syslog_show {
     else
         echo -n "${addr}"
         if [[ ! -z "${port}" ]]; then
-            echo -n ":${port}"
+            echo -n ":${port} (tcp)"
         fi
         echo
     fi
@@ -276,7 +276,8 @@ function cmd_syslog_show {
 # @restrict cmd_syslog_set admin
 # @doc cmd_syslog_set
 # Configure remote syslog server
-#   ADDRESS[:PORT] - To change settings
+#   ADDRESS[:PORT] - Address and an optional TCP port (default is 514)
+#                    of the remote syslog server.
 # Do not specify any arguments to clear the settings
 function cmd_syslog_set {
     local remote_point=${1:-}
@@ -294,6 +295,7 @@ function cmd_syslog_set {
     busctl set-property ${SYSLOG_CONFIG_SERVICE} \
                         ${SYSLOG_CONFIG_PATH} \
                         ${NETWORK_CLIENT_IFACE} Address s "${address}"
+    echo Configured remote logging to ${address}:${port}
 }
 
 # @sudo cmd_syslog_reset admin
