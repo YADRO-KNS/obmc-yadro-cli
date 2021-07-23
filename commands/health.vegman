@@ -118,5 +118,14 @@ function cmd_logs_clear {
     rm -f "${logfile}".*
   done
 
+  # Remove journals from previous BMC installations
+  local machine_id
+  machine_id=$(cat /etc/machine-id)
+  for d in /var/log/journal/*; do
+      if [ -d "${d}" ] && [ "${d##*/}" != "${machine_id}" ]; then
+          rm -fr "${d}"
+      fi
+  done
+
   echo "All logs are cleared."
 }
