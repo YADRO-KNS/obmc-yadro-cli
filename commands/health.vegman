@@ -114,6 +114,8 @@ function cmd_logs_clear {
   )
   for logfile in "${truncating[@]}"; do
     :> "${logfile}"
+    # Remove rotated logs
+    rm -f "${logfile}".*
   done
 
   echo "All logs are cleared."
