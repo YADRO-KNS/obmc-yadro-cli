@@ -217,7 +217,7 @@ function cmd_virtualmedia_mount {
       -r) readwrite=false;;
       -u) username="${2}"
           shift;;
-      -p) read -ers -p "Type password:" password;;
+      -p) read -ers -p "Type password:" password ; echo;;
       *)
         if [[ -n "${imagefile}" ]]; then
           abort_badarg "${1}"
@@ -299,7 +299,7 @@ function cmd_virtualmedia_umount {
 
   busctl call xyz.openbmc_project.VirtualMedia \
     "/xyz/openbmc_project/VirtualMedia/${dbus_vm_type}/${media}" \
-    "xyz.openbmc_project.VirtualMedia.${dbus_vm_type}" Unmount &>2 && \
+    "xyz.openbmc_project.VirtualMedia.${dbus_vm_type}" Unmount > /dev/null && \
   echo "Virtual Media (${media}) unmounted" || \
   echo "Failed to unmount Virtual Media (${media})"
 }
