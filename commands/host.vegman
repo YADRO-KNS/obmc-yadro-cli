@@ -196,17 +196,17 @@ function cmd_virtualmedia_status {
 #   --usb-ro    - The USB interface type (read-only)
 #   --hdd       - The HDD interface type
 #   --cdrom     - The CD/DVD/BD-ROM interface type (read-only), based on file size
-#   FILE        - Path to image file. Supported the SMB and the HTTP(S) protocols.
+#   FILE        - Path to image file. Supported the SMB,SCP,NFS,SFTP and the HTTP(S) protocols.
 #   -r          - Readonly mode
-#   -u USER     - Username credential to connect SMB or HTTP(S) remote server.
-#   -p          - Request to input the password credential to connect SMB or HTTP(S) remote server.
+#   -u USER     - Username credential to connect SMB,SCP,NFS,SFTP or HTTP(S) remote server.
+#   -p          - Request to input the password credential to connect SMB,SCP,NFS,SFTP or HTTP(S) remote server.
 function cmd_virtualmedia_mount {
   local imagefile=""
   local type=0
-  local readonly=false
+  local readwrite=true
   local username=""
   local password=""
-  local imagefile_pattern="^(https?|smb)://"
+  local imagefile_pattern="^(https?|smb|s?ftp|scp|nfs)://"
   local cred_pipe=0
   while [[ $# -gt 0 ]]; do
     case "${1}" in
