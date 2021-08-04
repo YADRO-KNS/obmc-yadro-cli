@@ -21,7 +21,7 @@ function cmd_inventory {
 # @doc cmd_sensors
 # Sensor readings
 function cmd_sensors {
-  lssensors "$@"
+  exec_tool lssensors -c "$@"
 }
 
 # @doc cmd_logs
