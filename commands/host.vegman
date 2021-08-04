@@ -214,7 +214,7 @@ function cmd_virtualmedia_mount {
       --usb-ro) type=0;;
       --hdd) type=1;;
       --cdrom) type=2;;
-      -r) readonly=true;;
+      -r) readwrite=false;;
       -u) username="${2}"
           shift;;
       -p) read -ers -p "Type password:" password;;
@@ -252,7 +252,7 @@ function cmd_virtualmedia_mount {
   busctl call xyz.openbmc_project.VirtualMedia \
     /xyz/openbmc_project/VirtualMedia/Legacy/USB1 \
     xyz.openbmc_project.VirtualMedia.Legacy \
-    Mount sbyv "$imagefile" $readonly ${type} i ${cred_pipe} > /dev/null  && \
+    Mount sbyv "$imagefile" $readwrite ${type} i ${cred_pipe} > /dev/null  && \
   echo "Virtual Media (USB1) mounted" || \
   echo "Failed to mount Virtual Media (USB1)"
 
