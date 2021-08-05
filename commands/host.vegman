@@ -192,14 +192,18 @@ function cmd_virtualmedia_status {
 # @restrict cmd_virtualmedia_mount admin
 # @doc cmd_virtualmedia_mount
 # Mount a virtual media
-#   --usb       - The USB interface type
-#   --usb-ro    - The USB interface type (read-only)
-#   --hdd       - The HDD interface type
-#   --cdrom     - The CD/DVD/BD-ROM interface type (read-only), based on file size
-#   FILE        - Path to image file. Supported the SMB,SCP,NFS,SFTP and the HTTP(S) protocols.
+#   --usb       - Mount as a USB interface type
+#   --usb-ro    - Mount as a USB interface type (read-only)
+#   --hdd       - Mount as an HDD interface type
+#   --cdrom     - Mount as a CD/DVD/BD-ROM interface type (read-only),
+#                 based on file size.
+#   FILE        - An image file URL. Supported protocols are:
+#                 smb, scp, nfs, ftp, sftp, http, https
 #   -r          - Readonly mode
-#   -u USER     - Username credential to connect SMB,SCP,NFS,SFTP or HTTP(S) remote server.
-#   -p          - Request to input the password credential to connect SMB,SCP,NFS,SFTP or HTTP(S) remote server.
+#   -u USER     - The user name to use when mounting an image from a remote
+#                 server via a protocol that requires authentication.
+#   -p          - Request to input the password when mounting an image from a
+#                 remote server via a protocol that requires authentication.
 function cmd_virtualmedia_mount {
   local imagefile=""
   local type=0
@@ -349,7 +353,7 @@ function config_default_status {
 # @sudo cmd_config_default admin
 # @restrict cmd_config_default admin
 # @doc cmd_config_default
-# Reset UEFI BIOS configuration to defaults on the next boot or cancel that request
+# Reset UEFI BIOS config to defaults on the next boot or cancel that request
 #  --cancel  - Cancel the settings reset request if it hasn't been processed yet
 #  --status  - Show the status of the settings reset request
 #  -y, --yes - Do not ask for confirmation
