@@ -190,6 +190,14 @@ function cmd_ifconfig {
   exec_tool netconfig --cli "$@"
 }
 
+# @sudo cmd_snmp admin
+# @restrict cmd_snmp admin
+# @doc cmd_snmp
+# Manage SNMP trap receivers
+function cmd_snmp {
+  exec_tool yadro-snmpmgr "$@"
+}
+
 # @restrict cmd_syslog admin
 # @doc cmd_syslog
 # Remote logging settings
