@@ -192,21 +192,25 @@ function cmd_virtualmedia_status {
 # @restrict cmd_virtualmedia_mount admin
 # @doc cmd_virtualmedia_mount
 # Mount a virtual media
-#   --usb       - The USB interface type
-#   --usb-ro    - The USB interface type (read-only)
-#   --hdd       - The HDD interface type
-#   --cdrom     - The CD/DVD/BD-ROM interface type (read-only), based on file size
-#   FILE        - Path to image file. Supported the SMB and the HTTP(S) protocols.
+#   --usb       - Mount as a USB interface type
+#   --usb-ro    - Mount as a USB interface type (read-only)
+#   --hdd       - Mount as an HDD interface type
+#   --cdrom     - Mount as a CD/DVD/BD-ROM interface type (read-only),
+#                 based on file size.
+#   FILE        - An image file URL. Supported protocols are:
+#                 smb, scp, nfs, ftp, sftp, http, https
 #   -r          - Readonly mode
-#   -u USER     - Username credential to connect SMB or HTTP(S) remote server.
-#   -p          - Request to input the password credential to connect SMB or HTTP(S) remote server.
+#   -u USER     - The user name to use when mounting an image from a remote
+#                 server via a protocol that requires authentication.
+#   -p          - Request to input the password when mounting an image from a
+#                 remote server via a protocol that requires authentication.
 function cmd_virtualmedia_mount {
   local imagefile=""
   local type=0
-  local readonly=false
+  local readwrite=true
   local username=""
   local password=""
-  local imagefile_pattern="^(https?|smb)://"
+  local imagefile_pattern="^(https?|smb|s?ftp|scp|nfs)://"
   local cred_pipe=0
   while [[ $# -gt 0 ]]; do
     case "${1}" in
@@ -214,10 +218,10 @@ function cmd_virtualmedia_mount {
       --usb-ro) type=0;;
       --hdd) type=1;;
       --cdrom) type=2;;
-      -r) readonly=true;;
+      -r) readwrite=false;;
       -u) username="${2}"
           shift;;
-      -p) read -ers -p "Type password:" password;;
+      -p) read -ers -p "Type password:" password ; echo;;
       *)
         if [[ -n "${imagefile}" ]]; then
           abort_badarg "${1}"
@@ -252,7 +256,7 @@ function cmd_virtualmedia_mount {
   busctl call xyz.openbmc_project.VirtualMedia \
     /xyz/openbmc_project/VirtualMedia/Legacy/USB1 \
     xyz.openbmc_project.VirtualMedia.Legacy \
-    Mount sbyv "$imagefile" $readonly ${type} i ${cred_pipe} > /dev/null  && \
+    Mount sbyv "$imagefile" $readwrite ${type} i ${cred_pipe} > /dev/null  && \
   echo "Virtual Media (USB1) mounted" || \
   echo "Failed to mount Virtual Media (USB1)"
 
@@ -299,7 +303,7 @@ function cmd_virtualmedia_umount {
 
   busctl call xyz.openbmc_project.VirtualMedia \
     "/xyz/openbmc_project/VirtualMedia/${dbus_vm_type}/${media}" \
-    "xyz.openbmc_project.VirtualMedia.${dbus_vm_type}" Unmount &>2 && \
+    "xyz.openbmc_project.VirtualMedia.${dbus_vm_type}" Unmount > /dev/null && \
   echo "Virtual Media (${media}) unmounted" || \
   echo "Failed to unmount Virtual Media (${media})"
 }
@@ -349,7 +353,7 @@ function config_default_status {
 # @sudo cmd_config_default admin
 # @restrict cmd_config_default admin
 # @doc cmd_config_default
-# Reset UEFI BIOS configuration to defaults on the next boot or cancel that request
+# Reset UEFI BIOS config to defaults on the next boot or cancel that request
 #  --cancel  - Cancel the settings reset request if it hasn't been processed yet
 #  --status  - Show the status of the settings reset request
 #  -y, --yes - Do not ask for confirmation
