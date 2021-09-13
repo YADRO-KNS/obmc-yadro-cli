@@ -119,3 +119,87 @@ function cmd_traceroute {
 function cmd_netstat {
   netstat "$@"
 }
+
+# D-Bus intrusion objects
+INTR_SERVICE="xyz.openbmc_project.intrusionsensor.service"
+INTR_RST_GPIO_PIN="CASE_OPEN_FAULT_RST"
+INTR_DBUS_SERVICE="xyz.openbmc_project.IntrusionSensor"
+INTR_DBUS_PATH="/xyz/openbmc_project/Intrusion/Chassis_Intrusion"
+INTR_DBUS_INTERFACE="xyz.openbmc_project.Chassis.Intrusion"
+INTR_DBUS_PROPERTY="Status"
+
+# @sudo cmd_intrusion_on admin,tech
+# @restrict cmd_intrusion_on admin,tech
+# @doc cmd_intrusion_on
+# Turn the chassis intrusion detection on
+function cmd_intrusion_on {
+  systemctl start ${INTR_SERVICE}
+  systemctl enable ${INTR_SERVICE}
+}
+
+# @sudo cmd_intrusion_off admin,tech
+# @restrict cmd_intrusion_off admin,tech
+# @doc cmd_intrusion_off
+# Turn the chassis intrusion detection off
+function cmd_intrusion_off {
+  systemctl stop ${INTR_SERVICE}
+  systemctl disable ${INTR_SERVICE}
+}
+
+get_intrusion_state() {
+  busctl get-property ${INTR_DBUS_SERVICE} "${INTR_DBUS_PATH}" \
+                      ${INTR_DBUS_INTERFACE} ${INTR_DBUS_PROPERTY} \
+                      2>/dev/null | awk '{print $NF;}' ||:
+}
+
+# @sudo cmd_intrusion_show admin,tech
+# @restrict cmd_intrusion_show admin,tech
+# @doc cmd_intrusion_show
+# Show the chassis intrusion detection status
+function cmd_intrusion_show {
+  state=$(get_intrusion_state)
+  if [[ -z "$state" ]]; then
+    echo "Intrusion sensor service is stopped or failed"
+  elif [ "$state" == "Normal" ]; then
+    echo "Chassis is closed"
+  else
+    echo "Hardware intrusion detected"
+  fi
+}
+
+# @sudo cmd_intrusion_clear admin,tech
+# @restrict cmd_intrusion_clear admin,tech
+# @doc cmd_intrusion_clear
+# Clear the chassis intrusion status
+function cmd_intrusion_clear {
+  local yes=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -y | --yes) yes="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  pin=$(gpiofind ${INTR_RST_GPIO_PIN})
+  if [[ -z "${pin}" ]]; then
+    echo "Intrusion detection reset is not available for this product"
+    return 1
+  fi
+
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  state=$(get_intrusion_state)
+  if [[ -z "$state" ]]; then
+    state="n/a"
+  fi
+
+  #shellcheck disable=SC2086
+  gpioset -m wait ${pin}=1 && \
+  log_audit "Asserted chassis intrusion reset pin from state: $state"
+
+  #shellcheck disable=SC2086
+  gpioset ${pin}=0
+}
