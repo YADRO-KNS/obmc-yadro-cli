@@ -27,7 +27,7 @@ get_led_state() {
     local name=$1
     busctl get-property ${LED_DBUS_SERVICE} "${LED_DBUS_PATH}/${name}" \
                         ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                        | awk '{print $NF}' 2>/dev/null
+                        2>/dev/null | awk '{print $NF}' ||:
 }
 
 set_led_state() {
@@ -36,7 +36,7 @@ set_led_state() {
 
     busctl set-property ${LED_DBUS_SERVICE} "${LED_DBUS_PATH}/${name}" \
                         ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                        b "${state}" 2>/dev/null
+                        b "${state}" 2>/dev/null ||:
 }
 
 # @sudo cmd_led_status admin,operator,user
@@ -51,12 +51,12 @@ function cmd_led_status {
   expect_noarg "$@"
   local state
 
-  state=$(get_led_state ${ID_LED_BLINKING} || :)
+  state=$(get_led_state ${ID_LED_BLINKING})
 
   # `enclosure_identify` has no sense while `enclosure_identify_blink` is
   # asserted.
   if [[ "${state}" != "true" ]]; then
-    state=$(get_led_state ${ID_LED_ON} || :)
+    state=$(get_led_state ${ID_LED_ON})
   fi
 
   case "${state}" in
@@ -74,7 +74,7 @@ function cmd_led_status {
 function cmd_led_on {
   expect_noarg "$@"
 
-  set_led_state ${ID_LED_BLINKING} false ||:
+  set_led_state ${ID_LED_BLINKING} false
   set_led_state ${ID_LED_ON} true
 
   # cmd_led_status takes no arguments, silience shellcheck about it
@@ -88,7 +88,7 @@ function cmd_led_on {
 # Turn the identification LED off
 function cmd_led_off {
   expect_noarg "$@"
-  set_led_state ${ID_LED_BLINKING} false ||:
+  set_led_state ${ID_LED_BLINKING} false
   set_led_state ${ID_LED_ON} false
 
   # cmd_led_status takes no arguments, silience shellcheck about it
