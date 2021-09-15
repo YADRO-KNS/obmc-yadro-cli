@@ -310,7 +310,7 @@ function cmd_update {
 # @restrict cmd_update_start admin
 # @doc cmd_update_start
 # Update BMC and BIOS.
-#   -c, --clearcfg - Reset BMC settings to manufacture defaults
+#   -c, --clearcfg - Reset BMC/BIOS settings to manufacture defaults
 #   -y, --yes      - Do not ask for confirmation
 #   FILE           - Firmware archive to install
 function cmd_update_start {
@@ -321,6 +321,7 @@ function cmd_update_start {
     case "$1" in
       -c | --clearcfg) reset="--reset";;
       -y | --yes) yes="--yes";;
+      -*) abort_badarg "$1";;
       *)
         if [[ -n "${fwfile}" ]]; then
           abort_badarg "$1"

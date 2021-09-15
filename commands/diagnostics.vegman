@@ -27,7 +27,7 @@ get_led_state() {
     local name=$1
     busctl get-property ${LED_DBUS_SERVICE} "${LED_DBUS_PATH}/${name}" \
                         ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                        | awk '{print $NF}' 2>/dev/null
+                        2>/dev/null | awk '{print $NF}' ||:
 }
 
 set_led_state() {
@@ -36,7 +36,7 @@ set_led_state() {
 
     busctl set-property ${LED_DBUS_SERVICE} "${LED_DBUS_PATH}/${name}" \
                         ${LED_DBUS_INTERFACE} ${LED_DBUS_PROPERTY} \
-                        b "${state}" 2>/dev/null
+                        b "${state}" 2>/dev/null ||:
 }
 
 # @sudo cmd_led_status admin,operator,user
@@ -51,12 +51,12 @@ function cmd_led_status {
   expect_noarg "$@"
   local state
 
-  state=$(get_led_state ${ID_LED_BLINKING} || :)
+  state=$(get_led_state ${ID_LED_BLINKING})
 
   # `enclosure_identify` has no sense while `enclosure_identify_blink` is
   # asserted.
   if [[ "${state}" != "true" ]]; then
-    state=$(get_led_state ${ID_LED_ON} || :)
+    state=$(get_led_state ${ID_LED_ON})
   fi
 
   case "${state}" in
@@ -74,7 +74,7 @@ function cmd_led_status {
 function cmd_led_on {
   expect_noarg "$@"
 
-  set_led_state ${ID_LED_BLINKING} false ||:
+  set_led_state ${ID_LED_BLINKING} false
   set_led_state ${ID_LED_ON} true
   log_audit "Set led on"
 
@@ -89,7 +89,7 @@ function cmd_led_on {
 # Turn the identification LED off
 function cmd_led_off {
   expect_noarg "$@"
-  set_led_state ${ID_LED_BLINKING} false ||:
+  set_led_state ${ID_LED_BLINKING} false
   set_led_state ${ID_LED_ON} false
   log_audit "Set led off"
 
@@ -120,4 +120,88 @@ function cmd_traceroute {
 # Network information from BMC
 function cmd_netstat {
   netstat "$@"
+}
+
+# D-Bus intrusion objects
+INTR_SERVICE="xyz.openbmc_project.intrusionsensor.service"
+INTR_RST_GPIO_PIN="CASE_OPEN_FAULT_RST"
+INTR_DBUS_SERVICE="xyz.openbmc_project.IntrusionSensor"
+INTR_DBUS_PATH="/xyz/openbmc_project/Intrusion/Chassis_Intrusion"
+INTR_DBUS_INTERFACE="xyz.openbmc_project.Chassis.Intrusion"
+INTR_DBUS_PROPERTY="Status"
+
+# @sudo cmd_intrusion_on admin,tech
+# @restrict cmd_intrusion_on admin,tech
+# @doc cmd_intrusion_on
+# Turn the chassis intrusion detection on
+function cmd_intrusion_on {
+  systemctl start ${INTR_SERVICE}
+  systemctl enable ${INTR_SERVICE}
+}
+
+# @sudo cmd_intrusion_off admin,tech
+# @restrict cmd_intrusion_off admin,tech
+# @doc cmd_intrusion_off
+# Turn the chassis intrusion detection off
+function cmd_intrusion_off {
+  systemctl stop ${INTR_SERVICE}
+  systemctl disable ${INTR_SERVICE}
+}
+
+get_intrusion_state() {
+  busctl get-property ${INTR_DBUS_SERVICE} "${INTR_DBUS_PATH}" \
+                      ${INTR_DBUS_INTERFACE} ${INTR_DBUS_PROPERTY} \
+                      2>/dev/null | awk '{print $NF;}' ||:
+}
+
+# @sudo cmd_intrusion_show admin,tech
+# @restrict cmd_intrusion_show admin,tech
+# @doc cmd_intrusion_show
+# Show the chassis intrusion detection status
+function cmd_intrusion_show {
+  state=$(get_intrusion_state)
+  if [[ -z "$state" ]]; then
+    echo "Intrusion sensor service is stopped or failed"
+  elif [ "$state" == "Normal" ]; then
+    echo "Chassis is closed"
+  else
+    echo "Hardware intrusion detected"
+  fi
+}
+
+# @sudo cmd_intrusion_clear admin,tech
+# @restrict cmd_intrusion_clear admin,tech
+# @doc cmd_intrusion_clear
+# Clear the chassis intrusion status
+function cmd_intrusion_clear {
+  local yes=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -y | --yes) yes="y";;
+      *) abort_badarg "$1";;
+    esac
+    shift
+  done
+
+  pin=$(gpiofind ${INTR_RST_GPIO_PIN})
+  if [[ -z "${pin}" ]]; then
+    echo "Intrusion detection reset is not available for this product"
+    return 1
+  fi
+
+  if [[ -z "${yes}" ]]; then
+    confirm
+  fi
+
+  state=$(get_intrusion_state)
+  if [[ -z "$state" ]]; then
+    state="n/a"
+  fi
+
+  #shellcheck disable=SC2086
+  gpioset -m wait ${pin}=1 && \
+  log_audit "Asserted chassis intrusion reset pin from state: $state"
+
+  #shellcheck disable=SC2086
+  gpioset ${pin}=0
 }

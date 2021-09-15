@@ -142,6 +142,16 @@ function cmd_delete {
     return 1
   fi
 
+  if [[ "${names[*]}" =~ 'admin' ]]; then
+    echo "Admin is a built-in user and cannot be removed!" >&2
+    return 1
+  fi
+
+  if [[ "${names[*]}" =~ ${SUDO_USER:-${USER}} ]]; then
+    echo "You cannot remove yourself" >&2
+    return 1
+  fi
+
   if [[ -z "${yes}" ]]; then
     if [[ ${#names[@]} -eq 1 ]]; then
       echo "User '${names[0]}' will be removed permanently."
@@ -225,6 +235,16 @@ function cmd_set_role {
   fi
   if [[ -z "${role}" ]]; then
     echo "Role name not specified" >&2
+    return 1
+  fi
+
+  if [[ "${name}" =~ 'admin' ]]; then
+    echo "Admin is a built-in user and cannot be changed!" >&2
+    return 1
+  fi
+
+  if [[ "${name}" =~ ${SUDO_USER:-${USER}} ]]; then
+    echo "You cannot change your own role" >&2
     return 1
   fi
 
