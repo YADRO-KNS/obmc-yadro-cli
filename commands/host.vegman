@@ -167,7 +167,7 @@ function cmd_virtualmedia {
 # @doc cmd_virtualmedia_status
 # Get the status of virtual media
 function cmd_virtualmedia_status {
-  local -a usb_status_metadata=( "USB0;Proxy" "USB1;Legacy" )
+  local -a usb_status_metadata=( "USB0;Proxy" "USB1;Legacy" "USB2;Direct" )
 
   for usb_item_metadata in "${usb_status_metadata[@]}"
   do
@@ -184,7 +184,16 @@ function cmd_virtualmedia_status {
                                   /xyz/openbmc_project/VirtualMedia/${vm_type}/${id} \
                                   xyz.openbmc_project.VirtualMedia.MountPoint ImageURL)
       image=${image#*\"}
-      echo "Image: ${image%\"*}"
+      if [[ "${vm_type}" == "Direct" ]]; then
+        local export_name=""
+        export_name=$(busctl get-property  xyz.openbmc_project.VirtualMedia \
+                                    /xyz/openbmc_project/VirtualMedia/${vm_type}/${id} \
+                                    xyz.openbmc_project.VirtualMedia.MountPoint ExportName)
+        export_name="${export_name#*\"}"
+        echo "NBD export: ${export_name%\"*} (${image%\"*})"
+      else
+        echo "Image: ${image%\"*}"
+      fi
     else
       echo "unmounted"
     fi
@@ -196,13 +205,21 @@ function cmd_virtualmedia_status {
 # @restrict cmd_virtualmedia_mount admin
 # @doc cmd_virtualmedia_mount
 # Mount a virtual media
+#   -m MODE     - The mount mode to selects the appropriate way to inject an image.
+#      legacy   - accept images from an external server through a particular protocol.
+#      nbd      - exports images from external NBD server.
 #   --usb       - Mount as a USB interface type
 #   --usb-ro    - Mount as a USB interface type (read-only)
 #   --hdd       - Mount as an HDD interface type
 #   --cdrom     - Mount as a CD/DVD/BD-ROM interface type (read-only),
 #                 based on file size.
 #   FILE        - An image file URL. Supported protocols are:
-#                 smb, scp, nfs, ftp, sftp, http, https
+#                 smb, scp, nfs, ftp, sftp, http, https.
+#                 LEGACY mode required.
+#   ADDRESS     - An NBD external server address.
+#                 NBD mode required.
+#   -e EXPORT     An NBD export name.
+#                 NBD mode required.
 #   -r          - Readonly mode
 #   -u USER     - The user name to use when mounting an image from a remote
 #                 server via a protocol that requires authentication.
@@ -210,6 +227,8 @@ function cmd_virtualmedia_status {
 #                 remote server via a protocol that requires authentication.
 function cmd_virtualmedia_mount {
   local imagefile=""
+  local mode=""
+  local export=""
   local type=0
   local readwrite=true
   local username=""
@@ -223,6 +242,10 @@ function cmd_virtualmedia_mount {
       --hdd) type=1;;
       --cdrom) type=2;;
       -r) readwrite=false;;
+      -m) mode="${2}"
+          shift;;
+      -e) export="${2}"
+          shift;;
       -u) username="${2}"
           shift;;
       -p) read -ers -p "Type password:" password ; echo;;
@@ -237,13 +260,23 @@ function cmd_virtualmedia_mount {
     shift
   done
 
- if [[ -z "${type}" ]]; then
+  if [[ -z "${mode}" || ( "${mode}" != "legacy" && "${mode}" != "nbd" ) ]]; then
+    echo "Please specify the valid Virtual Media mount mode" >&2
+    return 1
+  fi
+
+  if [[ -z "${type}" ]]; then
     echo "Please specify the Virtual Media interface type" >&2
     return 1
   fi
 
-  if ! [[ ${imagefile} =~ ${imagefile_pattern} ]]; then
+  if [[ "${mode}" == "legacy" && ! ( ${imagefile} =~ ${imagefile_pattern} ) ]]; then
     echo "Please specify a valid path to the image file" >&2
+    return 1
+  fi
+
+  if [[ "${mode}" == "nbd" && -z "${export}" ]]; then
+    echo "Please specify a valid export name of an external NBD server." >&2
     return 1
   fi
 
@@ -257,13 +290,23 @@ function cmd_virtualmedia_mount {
     printf "%s\0%s\0\n" "${username:0:64}" "${password:0:64}" >&{cred_pipe}
   fi
 
-  busctl call xyz.openbmc_project.VirtualMedia \
-    /xyz/openbmc_project/VirtualMedia/Legacy/USB1 \
-    xyz.openbmc_project.VirtualMedia.Legacy \
-    Mount sbyv "$imagefile" $readwrite ${type} i ${cred_pipe} > /dev/null  && \
-  (echo "Virtual Media (USB1) mounted"; \
-  log_audit "Host virtual media mount : ${imagefile}") || \
-  echo "Failed to mount Virtual Media (USB1)"
+  if [[ "${mode}" == "legacy" ]]; then
+    busctl call xyz.openbmc_project.VirtualMedia \
+      /xyz/openbmc_project/VirtualMedia/Legacy/USB1 \
+      xyz.openbmc_project.VirtualMedia.Legacy \
+      Mount sbyv "$imagefile" $readwrite ${type} i ${cred_pipe} > /dev/null  && \
+    (echo "Virtual Media (USB1) mounted"; \
+    log_audit "Host virtual media mount : ${imagefile}") || \
+    echo "Failed to mount Virtual Media (USB1)"
+  else
+    busctl call xyz.openbmc_project.VirtualMedia \
+      /xyz/openbmc_project/VirtualMedia/Direct/USB2 \
+      xyz.openbmc_project.VirtualMedia.Direct \
+      Mount ssbyv "${imagefile}" "${export}" $readwrite ${type} i ${cred_pipe} > /dev/null  && \
+    (echo "Virtual Media (USB2) mounted"; \
+    log_audit "Host virtual media mount from NBD server: ${imagefile}") || \
+    echo "Failed to mount Virtual Media (USB2)"
+  fi
 
   if [[ ${cred_pipe} -ne 0 ]]; then
     exec {cred_pipe}>&-
@@ -298,6 +341,9 @@ function cmd_virtualmedia_umount {
   elif [[ "${media}" == "USB1" ]]
   then
     dbus_vm_type="Legacy"
+  elif [[ "${media}" == "USB2" ]]
+  then
+    dbus_vm_type="Direct"
   else
     abort_badarg "${media}"
   fi
