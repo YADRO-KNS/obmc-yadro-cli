@@ -354,7 +354,6 @@ function config_default_status {
   expect_noarg "$@"
   if (ipmitool chassis bootparam get 5 | grep -i 'CMOS Clear'>/dev/null); then
     echo "BIOS settings will be RESET to defaults on next boot"
-    log_audit "BIOS settings will be RESET to defaults on next boot"
   else
     echo "BIOS settings will NOT be reset to defaults"
   fi
