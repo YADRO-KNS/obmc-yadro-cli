@@ -130,50 +130,74 @@ INTR_DBUS_PATH="/xyz/openbmc_project/Intrusion/Chassis_Intrusion"
 INTR_DBUS_INTERFACE="xyz.openbmc_project.Chassis.Intrusion"
 INTR_DBUS_PROPERTY="Status"
 
-# @sudo cmd_intrusion_on admin,tech
-# @restrict cmd_intrusion_on admin,tech
+# @doc cmd_intrusion
+# Chassis intrusion detection commands
+function cmd_intrusion {
+  subcommand "$@"
+}
+
+# @sudo cmd_intrusion_on admin
+# @restrict cmd_intrusion_on admin
 # @doc cmd_intrusion_on
 # Turn the chassis intrusion detection on
 function cmd_intrusion_on {
+  local msg="Enabled chassis intrusion detection"
   systemctl start ${INTR_SERVICE}
   systemctl enable ${INTR_SERVICE}
+  echo "${msg}"
 }
 
-# @sudo cmd_intrusion_off admin,tech
-# @restrict cmd_intrusion_off admin,tech
+# @sudo cmd_intrusion_off admin
+# @restrict cmd_intrusion_off admin
 # @doc cmd_intrusion_off
 # Turn the chassis intrusion detection off
 function cmd_intrusion_off {
+  local msg="Disabled chassis intrusion detection"
   systemctl stop ${INTR_SERVICE}
   systemctl disable ${INTR_SERVICE}
+  echo "${msg}"
 }
 
 get_intrusion_state() {
-  busctl get-property ${INTR_DBUS_SERVICE} "${INTR_DBUS_PATH}" \
+  local state
+  state=$(busctl get-property ${INTR_DBUS_SERVICE} "${INTR_DBUS_PATH}" \
                       ${INTR_DBUS_INTERFACE} ${INTR_DBUS_PROPERTY} \
-                      2>/dev/null | awk '{print $NF;}' ||:
-}
-
-# @sudo cmd_intrusion_show admin,tech
-# @restrict cmd_intrusion_show admin,tech
-# @doc cmd_intrusion_show
-# Show the chassis intrusion detection status
-function cmd_intrusion_show {
-  state=$(get_intrusion_state)
-  if [[ -z "$state" ]]; then
-    echo "Intrusion sensor service is stopped or failed"
-  elif [ "$state" == "Normal" ]; then
-    echo "Chassis is closed"
+                      2>/dev/null | awk '{print $NF;}' ||:)
+  if [[ -z "${state}" ]]; then
+    echo "N/A"
+  elif [[ "${state}" == "\"Normal\"" ]]; then
+    echo "No intrusion"
   else
-    echo "Hardware intrusion detected"
+    echo "Intrusion detected"
   fi
 }
 
-# @sudo cmd_intrusion_clear admin,tech
-# @restrict cmd_intrusion_clear admin,tech
+get_intrusion_service() {
+ systemctl show ${INTR_SERVICE} | \
+     grep -q "UnitFileState=enabled" && \
+         echo Enabled || echo Disabled
+}
+
+# @sudo cmd_intrusion_status admin,operator,user
+# @doc cmd_intrusion_status
+# Show the chassis intrusion detection status
+function cmd_intrusion_status {
+  local sstate
+  sstate=$(get_intrusion_service)
+  echo "Chassis intrusion detection: ${sstate}"
+  if [[ "${sstate}" == "Disabled" ]]; then
+	  return 0
+  fi
+
+  echo "Chassis intrusion state: $(get_intrusion_state)"
+}
+
+# @sudo cmd_intrusion_clear admin
+# @restrict cmd_intrusion_clear admin
 # @doc cmd_intrusion_clear
 # Clear the chassis intrusion status
 function cmd_intrusion_clear {
+  local clear_duration_us=500000
   local yes=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -183,25 +207,31 @@ function cmd_intrusion_clear {
     shift
   done
 
-  pin=$(gpiofind ${INTR_RST_GPIO_PIN})
-  if [[ -z "${pin}" ]]; then
+  local chip
+  local pin
+  # We do want word splitting here, in fact `set --` is
+  # specifically designed for word splitting.
+  # shellcheck disable=SC2046
+  set -- $(gpiofind ${INTR_RST_GPIO_PIN})
+  chip=$1
+  pin=$2
+
+  if [[ -z "${chip}" ]]; then
     echo "Intrusion detection reset is not available for this product"
     return 1
   fi
 
+  local state
+  state=$(get_intrusion_state)
+  echo "Current chassis intrusion state: $(get_intrusion_state)"
+
   if [[ -z "${yes}" ]]; then
+    echo -n "Clear it? "
     confirm
   fi
 
-  state=$(get_intrusion_state)
-  if [[ -z "$state" ]]; then
-    state="n/a"
-  fi
-
-  #shellcheck disable=SC2086
-  gpioset -m wait ${pin}=1 && \
-  log_audit "Asserted chassis intrusion reset pin from state: $state"
-
-  #shellcheck disable=SC2086
-  gpioset ${pin}=0
+  gpioset -m time -u "${clear_duration_us}" "${chip}" "${pin}"=1
+  gpioset "${chip}" "${pin}"=0
+  echo "Intrusion status cleared"
+  echo "New chassis intrusion status: $(get_intrusion_state)"
 }
