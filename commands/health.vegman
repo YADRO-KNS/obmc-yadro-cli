@@ -13,7 +13,7 @@
 # @doc cmd_inventory
 # System inventory
 function cmd_inventory {
-  ipmitool fru
+  exec_tool lsinventory "$@"
 }
 
 # @sudo cmd_sensors admin,operator,user
