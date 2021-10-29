@@ -128,6 +128,16 @@ function cmd_delete {
       -y | --yes) yes="y";;
       *)
         if [[ $1 =~ ${USERNAME_REGEX} ]]; then
+          if [[ "${1}" == "admin" ]]; then
+            echo "Admin is a built-in user and cannot be removed!" >&2
+            return 1
+          fi
+
+          if [[ "${1}" == "${SUDO_USER:-${USER}}" ]]; then
+            echo "You cannot remove yourself" >&2
+            return 1
+          fi
+
           names+=( "$1" )
         else
           abort_badarg "$1"
@@ -139,16 +149,6 @@ function cmd_delete {
 
   if [[ ${#names[@]} -lt 1 ]]; then
     echo "User name is not specified" >&2
-    return 1
-  fi
-
-  if [[ "${names[*]}" =~ 'admin' ]]; then
-    echo "Admin is a built-in user and cannot be removed!" >&2
-    return 1
-  fi
-
-  if [[ "${names[*]}" =~ ${SUDO_USER:-${USER}} ]]; then
-    echo "You cannot remove yourself" >&2
     return 1
   fi
 
@@ -238,12 +238,12 @@ function cmd_set_role {
     return 1
   fi
 
-  if [[ "${name}" =~ 'admin' ]]; then
+  if [[ "${name}" == "admin" ]]; then
     echo "Admin is a built-in user and cannot be changed!" >&2
     return 1
   fi
 
-  if [[ "${name}" =~ ${SUDO_USER:-${USER}} ]]; then
+  if [[ "${name}" == "${SUDO_USER:-${USER}}" ]]; then
     echo "You cannot change your own role" >&2
     return 1
   fi
