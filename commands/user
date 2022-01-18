@@ -92,12 +92,13 @@ function cmd_show {
                                ${DBUS_ATTRIBUTES} "UserPrivilege" \
                                2>/dev/null \
           | awk '{gsub(/"/, "", $NF); print $NF}')
-    if [[ -z "${grp}" ]]; then
-      echo "Invalid user: ${user}" >&2
-      return 1
-    fi
+
     local role
-    role=$(group_to_role "${grp}")
+    if [[ -z "${grp}" ]]; then
+      role="no-access"
+    else
+      role=$(group_to_role "${grp}")
+    fi
     echo "${user}: ${role}"
   done
 }
