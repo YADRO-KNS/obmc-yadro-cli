@@ -167,38 +167,7 @@ function cmd_virtualmedia {
 # @doc cmd_virtualmedia_status
 # Get the status of virtual media
 function cmd_virtualmedia_status {
-  local -a usb_status_metadata=( "USB0;Proxy" "USB1;Legacy" "USB2;Direct" )
-
-  for usb_item_metadata in "${usb_status_metadata[@]}"
-  do
-    local id="${usb_item_metadata%%;*}"
-    local vm_type="${usb_item_metadata##*;}"
-    local usb_status=$(busctl get-property xyz.openbmc_project.VirtualMedia \
-                                        /xyz/openbmc_project/VirtualMedia/${vm_type}/${id} \
-                                        xyz.openbmc_project.VirtualMedia.Process Active)
-    local image=""
-    echo -ne "Virtual Media ($id) status: "
-    if [ "$usb_status" == "b true" ]; then
-      echo "mounted"
-      image=$(busctl get-property  xyz.openbmc_project.VirtualMedia \
-                                  /xyz/openbmc_project/VirtualMedia/${vm_type}/${id} \
-                                  xyz.openbmc_project.VirtualMedia.MountPoint ImageURL)
-      image=${image#*\"}
-      if [[ "${vm_type}" == "Direct" ]]; then
-        local export_name=""
-        export_name=$(busctl get-property  xyz.openbmc_project.VirtualMedia \
-                                    /xyz/openbmc_project/VirtualMedia/${vm_type}/${id} \
-                                    xyz.openbmc_project.VirtualMedia.MountPoint ExportName)
-        export_name="${export_name#*\"}"
-        echo "NBD export: ${export_name%\"*} (${image%\"*})"
-      else
-        echo "Image: ${image%\"*}"
-      fi
-    else
-      echo "unmounted"
-    fi
-
-  done
+  vm-cli status
 }
 
 # @sudo cmd_virtualmedia_mount admin
@@ -221,34 +190,28 @@ function cmd_virtualmedia_status {
 #   -e EXPORT     An NBD export name.
 #                 NBD mode required.
 #   -r          - Readonly mode
-#   -u USER     - The user name to use when mounting an image from a remote
-#                 server via a protocol that requires authentication.
-#   -p          - Request to input the password when mounting an image from a
+#   -c          - Request to input the credentials when mounting an image from a
 #                 remote server via a protocol that requires authentication.
 function cmd_virtualmedia_mount {
   local imagefile=""
   local mode=""
   local export=""
-  local type=0
-  local readwrite=true
-  local username=""
-  local password=""
+  local type=""
+  local readwrite=""
+  local request_creds=""
   local imagefile_pattern="^(https?|smb|s?ftp|scp|nfs)://"
-  local cred_pipe=0
   while [[ $# -gt 0 ]]; do
     case "${1}" in
-      --usb) type=0;;
-      --usb-ro) type=0;;
-      --hdd) type=1;;
-      --cdrom) type=2;;
-      -r) readwrite=false;;
+      --usb) type="usb";;
+      --usb-ro) type="usb-ro";;
+      --hdd) type="hdd";;
+      --cdrom) type="cdrom";;
+      -r) readwrite="-r";;
       -m) mode="${2}"
           shift;;
       -e) export="${2}"
           shift;;
-      -u) username="${2}"
-          shift;;
-      -p) read -ers -p "Type password:" password ; echo;;
+      -c) request_creds="-c";;
       *)
         if [[ -n "${imagefile}" ]]; then
           abort_badarg "${1}"
@@ -280,36 +243,12 @@ function cmd_virtualmedia_mount {
     return 1
   fi
 
-  if [[ ! -z ${username} ]] || [[ ! -z ${password} ]]
-  then
-    local cred_pipe_fifo=$(mktemp -u)
-    mkfifo $cred_pipe_fifo
-    exec {cred_pipe}<>${cred_pipe_fifo}
-    rm $cred_pipe_fifo
-
-    printf "%s\0%s\0\n" "${username:0:64}" "${password:0:64}" >&{cred_pipe}
-  fi
-
   if [[ "${mode}" == "legacy" ]]; then
-    busctl call xyz.openbmc_project.VirtualMedia \
-      /xyz/openbmc_project/VirtualMedia/Legacy/USB1 \
-      xyz.openbmc_project.VirtualMedia.Legacy \
-      Mount sbyv "$imagefile" $readwrite ${type} i ${cred_pipe} > /dev/null  && \
-    (echo "Virtual Media (USB1) mounted"; \
-    log_audit "Host virtual media mount : ${imagefile}") || \
-    echo "Failed to mount Virtual Media (USB1)"
+    vm-cli mount "${type}" ${request_creds} ${readwrite} "${imagefile}" && \
+      log_audit "Host virtual media mount : ${imagefile}"
   else
-    busctl call xyz.openbmc_project.VirtualMedia \
-      /xyz/openbmc_project/VirtualMedia/Direct/USB2 \
-      xyz.openbmc_project.VirtualMedia.Direct \
-      Mount ssbyv "${imagefile}" "${export}" $readwrite ${type} i ${cred_pipe} > /dev/null  && \
-    (echo "Virtual Media (USB2) mounted"; \
-    log_audit "Host virtual media mount from NBD server: ${imagefile}") || \
-    echo "Failed to mount Virtual Media (USB2)"
-  fi
-
-  if [[ ${cred_pipe} -ne 0 ]]; then
-    exec {cred_pipe}>&-
+    vm-cli mount "${type}" ${request_creds} ${readwrite} "${imagefile}" "${export}" && \
+      log_audit "Host virtual media mount from NBD server: ${imagefile}"
   fi
 }
 
@@ -322,7 +261,6 @@ function cmd_virtualmedia_mount {
 function cmd_virtualmedia_umount {
   local yes=""
   local media=""
-  local dbus_vm_type=""
   while [[ $# -gt 0 ]]; do
     case "${1}" in
       -y | --yes) yes="y";;
@@ -335,16 +273,9 @@ function cmd_virtualmedia_umount {
     esac
     shift
   done
-  if [[ "${media}" == "USB0" ]]
+
+  if [[ "${media}" != "USB0" && "${media}" != "USB1" && "${media}" != "USB2" ]]
   then
-    dbus_vm_type="Proxy"
-  elif [[ "${media}" == "USB1" ]]
-  then
-    dbus_vm_type="Legacy"
-  elif [[ "${media}" == "USB2" ]]
-  then
-    dbus_vm_type="Direct"
-  else
     abort_badarg "${media}"
   fi
 
@@ -352,13 +283,8 @@ function cmd_virtualmedia_umount {
     confirm
   fi
 
-  busctl call xyz.openbmc_project.VirtualMedia \
-    "/xyz/openbmc_project/VirtualMedia/${dbus_vm_type}/${media}" \
-    "xyz.openbmc_project.VirtualMedia.${dbus_vm_type}" Unmount > /dev/null && \
-  (echo "Virtual Media (${media}) unmounted"; \
-  log_audit "Virtual Media (${media}) unmounted") || \
-  (echo "Failed to unmount Virtual Media (${media})"; \
-  log_audit "Failed to unmount Virtual Media (${media})")
+  vm-cli umount "${media}" && \
+    log_audit "Virtual Media (${media}) unmounted"
 }
 
 
