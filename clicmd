@@ -77,7 +77,7 @@ fi
 # Execute an extenal tool and replace the program name
 # by the name of the CLI command that called this function
 function exec_tool {
-  local FNAME=${FUNCNAME[1]##cmd_}
+  local FNAME="${FUNCNAME[1]##cmd_}"
   local PNAME="bmc ${FNAME//_/ }"
   local TOOL="$1"; shift
   exec -a "${PNAME}" "${TOOL}" "$@"
@@ -95,10 +95,10 @@ function subcommand {
     # print help as a list of subcommands at the current layer
     print_help "${parent}" | head -n 1
     local cmd
-    for cmd in ${children[*]}; do
+    for cmd in "${children[@]}"; do
       local help
       help=$(print_help "${cmd}" | head -n 1)
-      [[ -n "${help}" ]] && printf "%-16s %s\n" "${cmd#${parent}_}" "${help}"
+      [[ -n "${help}" ]] && printf "%-16s %s\n" "${cmd#"${parent}"_}" "${help}"
     done
     return
   fi
