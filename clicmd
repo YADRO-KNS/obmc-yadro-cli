@@ -78,7 +78,8 @@ fi
 # by the name of the CLI command that called this function
 function exec_tool {
   local FNAME="${FUNCNAME[1]##cmd_}"
-  local PNAME="bmc ${FNAME//_/ }"
+  local PNAME
+  PNAME="$(basename "${USER_CMD}") ${FNAME//_/ }"
   local TOOL="$1"; shift
   exec -a "${PNAME}" "${TOOL}" "$@"
 }
