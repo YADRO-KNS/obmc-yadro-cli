@@ -257,3 +257,80 @@ function cmd_set_role {
   log_audit "Set role ${role} for user ${name}"
   echo "User ${name} now has ${role} privileges."
 }
+
+# helper function for read and check user names
+function get_names {
+  local -a names
+
+  while [[ $# -gt 0 ]]; do
+    if [[ $1 =~ ${USERNAME_REGEX} ]]; then
+      names+=( "$1" )
+    else
+      abort_badarg "$1"
+    fi
+    shift
+  done
+
+  if [[ ${#names[@]} -lt 1 ]]; then
+    echo "User name is not specified" >&2
+    return 0
+  fi
+  echo "${names[@]}"
+}
+
+# @sudo cmd_unlock admin
+# @restrict cmd_unlock admin
+# @doc cmd_unlock
+# Unlock users
+#   USERNAME... - User account name (multiple names can be unlocked)
+function cmd_unlock {
+  local -a names
+  read -r -a names < <(get_names "$@")
+
+  if [[ ${#names[@]} -gt 0 ]]; then
+    for name in "${names[@]}"; do
+      busctl set-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
+                          ${DBUS_ATTRIBUTES} "UserLockedForFailedAttempt" b "false"
+      log_audit "Unlocked user ${name}"
+      echo "User ${name} unlocked."
+    done
+  fi
+}
+
+# @sudo cmd_enable admin
+# @restrict cmd_enable admin
+# @doc cmd_enable
+# Enable users
+#   USERNAME... - User account name (multiple names can be enabled)
+function cmd_enable {
+  local -a names
+  read -r -a names < <(get_names "$@")
+
+  if [[ ${#names[@]} -gt 0 ]]; then
+    for name in "${names[@]}"; do
+      busctl set-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
+                          ${DBUS_ATTRIBUTES} "UserEnabled" b "true"
+      log_audit "Enabled user ${name}"
+      echo "User ${name} enabled."
+    done
+  fi
+}
+
+# @sudo cmd_disable admin
+# @restrict cmd_disable admin
+# @doc cmd_disable
+# Disable users
+#   USERNAME... - User account name (multiple names can be disabled)
+function cmd_disable {
+  local names=()
+  read -r -a names < <(get_names "$@")
+
+  if [[ ${#names[@]} -gt 0 ]]; then
+    for name in "${names[@]}"; do
+      busctl set-property ${DBUS_SERVICE} "${DBUS_ROOT_PATH}/${name}" \
+                          ${DBUS_ATTRIBUTES} "UserEnabled" b "false"
+      log_audit "Disabled user ${name}"
+      echo "User ${name} disabled."
+    done
+  fi
+}
