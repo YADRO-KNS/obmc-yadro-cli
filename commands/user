@@ -19,7 +19,7 @@ DBUS_ROOT_PATH="/xyz/openbmc_project/user"
 DBUS_ATTRIBUTES="xyz.openbmc_project.User.Attributes"
 DBUS_DELETE="xyz.openbmc_project.Object.Delete"
 
-USERNAME_REGEX="^[\.a-zA-Z0-9_-]+$"
+USERNAME_REGEX="^[a-zA-Z_][a-zA-Z0-9_]*$"
 
 # This one us used in help, need to output a single word of role
 # and nothing else. Please do not 'beautify'.
