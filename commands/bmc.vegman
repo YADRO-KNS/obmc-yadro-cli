@@ -354,17 +354,17 @@ function cmd_reboot {
   local yes=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -f | --force) force="y";;
-      -y | --yes) yes="y";;
+      -f | --force) force="-f";;
+      -y | --yes) yes="-y";;
       *) abort_badarg "$1";;
     esac
     shift
   done
 
   if [[ -n "${force}" ]]; then
-    echo -n "BMC will be rebooted gracefully,"
-  else
     echo -n "BMC will be rebooted forcefully,"
+  else
+    echo -n "BMC will be rebooted gracefully,"
   fi
   echo " all user sessions including this one will be"
   echo "closed. Host will not be affected."
