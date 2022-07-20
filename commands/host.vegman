@@ -256,7 +256,7 @@ function cmd_virtualmedia_mount {
 # @restrict cmd_virtualmedia_umount admin
 # @doc cmd_virtualmedia_umount
 # Unmount the virtual media
-#   MEDIA     - Virtual Media Device name to unmount (USB0 or USB1)
+#   MEDIA     - Virtual Media Device name to unmount (USB0, USB1 or USB2)
 #   -y, --yes - Do not ask for confirmation
 function cmd_virtualmedia_umount {
   local yes=""
