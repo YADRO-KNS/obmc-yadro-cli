@@ -256,7 +256,7 @@ function cmd_virtualmedia_mount {
 # @restrict cmd_virtualmedia_umount admin
 # @doc cmd_virtualmedia_umount
 # Unmount the virtual media
-#   MEDIA     - Virtual Media Device name to unmount (USB0, USB1 or USB2)
+#   MEDIA     - Virtual Media Device name to unmount (Device0, Device1 or Device2)
 #   -y, --yes - Do not ask for confirmation
 function cmd_virtualmedia_umount {
   local yes=""
@@ -274,7 +274,7 @@ function cmd_virtualmedia_umount {
     shift
   done
 
-  if [[ "${media}" != "USB0" && "${media}" != "USB1" && "${media}" != "USB2" ]]
+  if [[ "${media}" != "Device0" && "${media}" != "Device1" && "${media}" != "Device2" ]]
   then
     abort_badarg "${media}"
   fi
