@@ -12,6 +12,19 @@ cat << EOF
 Welcome to BMC Command Line Interface for $(sed -n 's/OPENBMC_TARGET_MACHINE="\(.*\)"/\1/p' /etc/os-release)!
 Copyright (C) 2020-2021 YADRO
 
+EOF
+
+# Watchdog status 0x20 shows us that we are booted from the golden side
+WDIOF_CARDRESET=0x20
+WDSTATUS=$(cat /sys/class/watchdog/watchdog1/status)
+if (( WDSTATUS & WDIOF_CARDRESET )); then
+    cat << EOF
+WARNING: BMC is booted up in recovery mode (from golden flash)!
+
+EOF
+fi
+
+cat << EOF
 Type 'help' to print the list of available CLI commands.
 EOF
 
