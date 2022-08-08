@@ -13,10 +13,6 @@ TIMESYNC_METHOD_PATH="/xyz/openbmc_project/time/sync_method"
 TIMESYNC_METHOD_IFACE="xyz.openbmc_project.Time.Synchronization"
 TIMESYNC_METHOD_PROPERTY="TimeSyncMethod"
 
-SYSLOG_CONFIG_SERVICE="xyz.openbmc_project.Syslog.Config"
-SYSLOG_CONFIG_PATH="/xyz/openbmc_project/logging/config/remote"
-NETWORK_CLIENT_IFACE="xyz.openbmc_project.Network.Client"
-
 # Format date in a non-standard way
 function format_date {
   local compact="$1"
@@ -200,77 +196,12 @@ function cmd_snmp {
   exec_tool yadro-snmpmgr "$@"
 }
 
+# @sudo cmd_syslog admin
 # @restrict cmd_syslog admin
 # @doc cmd_syslog
 # Remote logging settings
 function cmd_syslog {
-  subcommand "$@"
-}
-
-# @sudo cmd_syslog_show admin
-# @doc cmd_syslog_show
-# Show the configured remote syslog server
-function cmd_syslog_show {
-    local addr
-    addr=$(busctl get-property ${SYSLOG_CONFIG_SERVICE} \
-                               ${SYSLOG_CONFIG_PATH} \
-                               ${NETWORK_CLIENT_IFACE} Address \
-                               2>/dev/null)
-    addr=${addr#*\"}
-    addr=${addr%\"*}
-
-    local port
-    port=$(busctl get-property ${SYSLOG_CONFIG_SERVICE} \
-                               ${SYSLOG_CONFIG_PATH} \
-                               ${NETWORK_CLIENT_IFACE} Port \
-                               2>/dev/null)
-    port=${port#* }
-
-    echo -n "Remote syslog server: "
-    if [[ -z "${addr}" ]] || [[ "${port}" == "0" ]]; then
-        echo "(none)"
-    else
-        echo -n "${addr}"
-        if [[ ! -z "${port}" ]]; then
-            echo -n ":${port} (tcp)"
-        fi
-        echo
-    fi
-}
-
-# @sudo cmd_syslog_set admin
-# @restrict cmd_syslog_set admin
-# @doc cmd_syslog_set
-# Configure remote syslog server
-#   ADDRESS[:PORT] - Address and an optional TCP port (default is 514)
-#                    of the remote syslog server.
-# Do not specify any arguments to clear the settings
-function cmd_syslog_set {
-    local remote_point=${1:-}
-    local address=${remote_point%:*}
-    local port=${remote_point#*:}
-
-    if [[ "${port}" == "${remote_point}" ]] || [[ -z "${port}" ]]; then
-        port=514
-    fi
-
-    busctl set-property ${SYSLOG_CONFIG_SERVICE} \
-                        ${SYSLOG_CONFIG_PATH} \
-                        ${NETWORK_CLIENT_IFACE} Port q ${port} \
-    && \
-    busctl set-property ${SYSLOG_CONFIG_SERVICE} \
-                        ${SYSLOG_CONFIG_PATH} \
-                        ${NETWORK_CLIENT_IFACE} Address s "${address}"
-    echo Configured remote logging to ${address}:${port}
-    log_audit "Set remote syslog server to ${address}:${port}"
-}
-
-# @sudo cmd_syslog_reset admin
-# @restrict cmd_syslog_reset admin
-# @doc cmd_syslog_reset
-# Reset syslog settings. Alias for the syslog set command without arguments.
-function cmd_syslog_reset {
-    cmd_syslog_set :0
+  exec_tool netconfig --cli "$@"
 }
 
 # @restrict cmd_config admin
