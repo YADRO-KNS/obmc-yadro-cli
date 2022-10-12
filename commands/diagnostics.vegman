@@ -129,6 +129,12 @@ INTR_DBUS_SERVICE="xyz.openbmc_project.IntrusionSensor"
 INTR_DBUS_PATH="/xyz/openbmc_project/Intrusion/Chassis_Intrusion"
 INTR_DBUS_INTERFACE="xyz.openbmc_project.Chassis.Intrusion"
 INTR_DBUS_PROPERTY="Status"
+# D-Bus Intrusion sensor reset request status objects
+INTR_REQ_STATUS_DBUS_PATH="/xyz/openbmc_project/Intrusion/Reset_Request"
+INTR_REQ_STATUS_DBUS_INTF="xyz.openbmc_project.Chassis.Intrusion.ResetRequest"
+INT_REQ_STATUS_DBUS_PROPERTY="ClearRequestStatus"
+PROPERTY_PENDING="Pending"
+GEN_SMI_GPIO_PIN="IRQ_BMC_PCH_SMI_LPC"
 
 # @doc cmd_intrusion
 # Chassis intrusion detection commands
@@ -180,6 +186,27 @@ get_intrusion_service() {
          echo Enabled || echo Disabled
 }
 
+get_intrusion_request_status() {
+  local state
+  state=$(busctl get-property ${INTR_DBUS_SERVICE} "${INTR_REQ_STATUS_DBUS_PATH}" \
+                      ${INTR_REQ_STATUS_DBUS_INTF} ${INT_REQ_STATUS_DBUS_PROPERTY} \
+                      2>/dev/null | awk '{print $NF;}' ||:)
+  if [[ "${state}" == "\"${PROPERTY_PENDING}\"" ]]; then
+    echo "(clear pending)"
+  fi
+}
+
+set_intrusion_request_status() {
+  local value=$1
+  busctl set-property ${INTR_DBUS_SERVICE} "${INTR_REQ_STATUS_DBUS_PATH}" \
+                      ${INTR_REQ_STATUS_DBUS_INTF} ${INT_REQ_STATUS_DBUS_PROPERTY} \
+                      "s" "${value}" \
+                      2>/dev/null | awk '{print $NF;}' ||:
+
+  echo "Set intrusion sensor request status to: ${value}"
+  log_audit "Set intrusion sensor request status to: ${value}"
+}
+
 # @sudo cmd_intrusion_status admin,operator,user
 # @doc cmd_intrusion_status
 # Show the chassis intrusion detection status
@@ -191,7 +218,8 @@ function cmd_intrusion_status {
 	  return 0
   fi
 
-  echo "Chassis intrusion state: $(get_intrusion_state)"
+  sstate="$(get_intrusion_request_status)"
+  echo "Chassis intrusion state: $(get_intrusion_state) ${sstate}"
 }
 
 # @sudo cmd_intrusion_clear admin
@@ -219,8 +247,28 @@ function cmd_intrusion_clear {
   pin=$2
 
   if [[ -z "${chip}" ]]; then
-    echo "Intrusion detection reset is not available for this product"
-    return 1
+    # Check for IRQ_BMC_PCH_SMI_LPC pin on VEGMAN-R hardware
+    set -- $(gpiofind ${GEN_SMI_GPIO_PIN}) "" ""
+    chip=$1
+    pin=$2
+    if [[ -z "${chip}" ]]; then
+      echo "Intrusion detection reset is not available for this product"
+      return 1
+    fi
+
+    cmd_intrusion_status
+
+    if [[ -z "${yes}" ]]; then
+      echo -n "Request intrusion sensor state reset? "
+      confirm
+    fi
+
+    set_intrusion_request_status ${PROPERTY_PENDING}
+    # generate SMI
+    gpioset "${chip}" "${pin}"=0
+    gpioset "${chip}" "${pin}"=1
+    cmd_intrusion_status
+    return 0
   fi
 
   local state
