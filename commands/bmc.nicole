@@ -20,17 +20,12 @@ NETWORK_CLIENT_IFACE="xyz.openbmc_project.Network.Client"
 # Format date in a non-standard way
 function format_date {
   local compact="$1"
-  local utc="$2"
-  local sec="$3"
+  local sec="$2"
 
-  if [[ -n "${compact}" ]] && [[ -n "${utc}" ]]; then
-    date --date "@${sec}" --utc +'%F %T UTC'
-  elif [[ -n "${compact}" ]]; then
+  if [[ -n "${compact}" ]]; then
     date --date "@${sec}" +'%F %T UTC%z'
-  elif [[ -n "${utc}" ]]; then
-    date --date "@${sec}" --utc +'%a %d %b %Y %T UTC'
   else
-    date --date "@${sec}" +'%a %d %b %Y %T UTC%z'
+    date --date "@${sec}" --utc +'%a %d %b %Y %T UTC'
   fi
 }
 
@@ -43,14 +38,12 @@ function cmd_info {
 # @doc cmd_info_uptime
 # Show BMC uptime
 #   -c, --compact - Show last boot time in compact format
-#   -u, --utc     - Show last boot time in UTC timezone
 function cmd_info_uptime {
   local compact=""
   local utc=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -c | --compact) compact="y";;
-      -u | --utc) utc="y";;
       *) abort_badarg "$1";;
     esac
     shift
@@ -66,7 +59,7 @@ function cmd_info_uptime {
                                         $((sec % 3600 / 60)) \
                                         $((sec % 60))
   echo -n "Last BMC start was on "
-  format_date "${compact}" "${utc}" "${up}"
+  format_date "${compact}" "${up}"
 }
 
 # @sudo cmd_info_version admin,operator,user
@@ -202,19 +195,17 @@ function cmd_datetime_set {
 # @doc cmd_datetime_show
 # Show system time
 #   -c, --compact - Show last boot time in compact format
-#   -u, --utc     - Show last boot time in UTC timezone
 function cmd_datetime_show {
   local compact=""
   local utc=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -c | --compact) compact="y";;
-      -u | --utc) utc="y";;
       *) abort_badarg "$1";;
     esac
     shift
   done
-  format_date "${compact}" "${utc}" "$(date +%s)"
+  format_date "${compact}" "$(date +%s)"
 }
 
 # @sudo cmd_datetime_ntpconfig admin
