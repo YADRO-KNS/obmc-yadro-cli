@@ -194,7 +194,7 @@ function cmd_datetime_set {
 
 # @doc cmd_datetime_show
 # Show system time
-#   -c, --compact - Show last boot time in compact format
+#   -c, --compact - Use compact format for date and time
 function cmd_datetime_show {
   local compact=""
   local utc=""
