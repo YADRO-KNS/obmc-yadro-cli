@@ -195,6 +195,14 @@ function cmd_syslog {
   exec_tool netconfig --cli "$@"
 }
 
+# @sudo cmd_services admin
+# @restrict cmd_services admin
+# @doc cmd_services
+# Manage BMC services
+function cmd_services {
+  exec_tool srvctl "$@"
+}
+
 # @restrict cmd_config admin
 # @doc cmd_config
 # BMC config backup and restore
