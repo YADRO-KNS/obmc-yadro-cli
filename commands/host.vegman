@@ -354,6 +354,23 @@ function cmd_config_default {
   config_default_${action} ${yes}
 }
 
+# @sudo cmd_config_bifurcation admin,operator,user
+# @doc cmd_config_bifurcation
+# Host bifurcation
+function cmd_config_bifurcation {
+  subcommand "$@"
+}
+
+# @sudo cmd_config_bifurcation_show admin,operator,user
+# @doc cmd_config_bifurcation_show
+# Show PCIe bifurcation requested by BMC from the host
+function cmd_config_bifurcation_show {
+  printf "Below are the PCIe bifurcation settings requested by the BMC.
+The actual bifurcation may differ based on the UEFI Setup
+settings as well as on training results:\n\n"
+  exec_tool host-pcie-cfg "$@"
+}
+
 # @sudo cmd_nmi admin
 # @restrict cmd_nmi admin
 # @doc cmd_nmi
